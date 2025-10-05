@@ -23,6 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.ivy.data.db.entity.BudgetEntity
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.primitive.ColorInt
@@ -33,7 +34,9 @@ import com.ivy.design.l0_system.style
 import com.ivy.domain.legacy.ui.theme.components.ListItem
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.Budget
+import com.ivy.legacy.datamodel.temp.parseAccountIds
+import com.ivy.legacy.datamodel.temp.parseCategoryIds
+import com.ivy.legacy.datamodel.temp.serialize
 import com.ivy.legacy.legacy.ui.theme.modal.ModalNameInput
 import com.ivy.legacy.utils.isNotNullOrBlank
 import com.ivy.legacy.utils.selectEndTextFieldValue
@@ -52,9 +55,8 @@ import com.ivy.wallet.ui.theme.modal.edit.AmountModal
 import com.ivy.wallet.ui.theme.toComposeColor
 import java.util.UUID
 
-@Deprecated("Old design system. Use `:ivy-design` and Material3")
 data class BudgetModalData(
-    val budget: Budget?,
+    val budget: BudgetEntity?,
 
     val baseCurrency: String,
     val categories: List<Category>,
@@ -70,8 +72,8 @@ fun BoxWithConstraintsScope.BudgetModal(
     modal: BudgetModalData?,
 
     onCreate: (CreateBudgetData) -> Unit,
-    onEdit: (Budget) -> Unit,
-    onDelete: (Budget) -> Unit,
+    onEdit: (BudgetEntity) -> Unit,
+    onDelete: (BudgetEntity) -> Unit,
     dismiss: () -> Unit
 ) {
     val initialBudget = modal?.budget
@@ -105,8 +107,8 @@ fun BoxWithConstraintsScope.BudgetModal(
                         initialBudget.copy(
                             name = nameTextFieldValue.text.trim(),
                             amount = amount,
-                            categoryIdsSerialized = Budget.serialize(categoryIds),
-                            accountIdsSerialized = Budget.serialize(accountIds)
+                            categoryIdsSerialized = serialize(categoryIds),
+                            accountIdsSerialized = serialize(accountIds)
                         )
                     )
                 } else {
@@ -114,8 +116,8 @@ fun BoxWithConstraintsScope.BudgetModal(
                         CreateBudgetData(
                             name = nameTextFieldValue.text.trim(),
                             amount = amount,
-                            categoryIdsSerialized = Budget.serialize(categoryIds),
-                            accountIdsSerialized = Budget.serialize(accountIds)
+                            categoryIdsSerialized = serialize(categoryIds),
+                            accountIdsSerialized = serialize(accountIds)
                         )
                     )
                 }
@@ -321,7 +323,7 @@ private fun Preview_edit() {
 
         BudgetModal(
             modal = BudgetModalData(
-                budget = Budget(
+                budget = BudgetEntity(
                     name = "Shopping",
                     amount = 1250.0,
                     accountIdsSerialized = null,

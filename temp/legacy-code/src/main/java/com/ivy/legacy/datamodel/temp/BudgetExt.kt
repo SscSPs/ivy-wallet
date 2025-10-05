@@ -1,19 +1,7 @@
 package com.ivy.legacy.datamodel.temp
 
 import com.ivy.data.db.entity.BudgetEntity
-import com.ivy.legacy.datamodel.Budget
 import java.util.UUID
-
-fun BudgetEntity.toLegacyDomain(): Budget = Budget(
-    name = name,
-    amount = amount,
-    categoryIdsSerialized = categoryIdsSerialized,
-    accountIdsSerialized = accountIdsSerialized,
-    isSynced = isSynced,
-    isDeleted = isDeleted,
-    orderId = orderId,
-    id = id
-)
 
 fun serialize(ids: List<UUID>): String {
     return ids.joinToString(separator = ",")

@@ -1,12 +1,12 @@
 package com.ivy.budgets.model
 
 import androidx.compose.runtime.Immutable
-import com.ivy.legacy.datamodel.Budget
+import com.ivy.data.db.entity.BudgetEntity
 import com.ivy.wallet.domain.data.Reorderable
 
 @Immutable
 data class DisplayBudget(
-    val budget: Budget,
+    val budget: BudgetEntity,
     val spentAmount: Double
 ) : Reorderable {
     override fun getItemOrderNum(): Double {

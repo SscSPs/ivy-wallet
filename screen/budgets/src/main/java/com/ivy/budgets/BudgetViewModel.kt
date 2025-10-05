@@ -12,6 +12,7 @@ import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.budgets.model.DisplayBudget
 import com.ivy.data.db.dao.write.WriteBudgetDao
+import com.ivy.data.db.entity.BudgetEntity
 import com.ivy.data.model.Category
 import com.ivy.data.model.Expense
 import com.ivy.data.model.Income
@@ -24,7 +25,8 @@ import com.ivy.frp.sumOfSuspend
 import com.ivy.legacy.data.model.FromToTimeRange
 import com.ivy.legacy.data.model.toCloseTimeRange
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.Budget
+import com.ivy.legacy.datamodel.temp.parseAccountIds
+import com.ivy.legacy.datamodel.temp.parseCategoryIds
 import com.ivy.legacy.domain.deprecated.logic.BudgetCreator
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.isNotNullOrBlank
@@ -222,7 +224,7 @@ class BudgetViewModel @Inject constructor(
     }
 
     private suspend fun calculateSpentAmount(
-        budget: Budget,
+        budget: BudgetEntity,
         transactions: List<Transaction>,
         baseCurrencyCode: String,
         accounts: List<Account>
@@ -269,7 +271,7 @@ class BudgetViewModel @Inject constructor(
         }
     }
 
-    private fun editBudget(budget: Budget) {
+    private fun editBudget(budget: BudgetEntity) {
         viewModelScope.launch {
             budgetCreator.editBudget(budget) {
                 start()
@@ -277,7 +279,7 @@ class BudgetViewModel @Inject constructor(
         }
     }
 
-    private fun deleteBudget(budget: Budget) {
+    private fun deleteBudget(budget: BudgetEntity) {
         viewModelScope.launch {
             budgetCreator.deleteBudget(budget) {
                 start()
@@ -290,7 +292,7 @@ class BudgetViewModel @Inject constructor(
             com.ivy.legacy.utils.ioThread {
                 newOrder.forEachIndexed { index, item ->
                     budgetWriter.save(
-                        item.budget.toEntity().copy(
+                        item.budget.copy(
                             orderId = index.toDouble(),
                             isSynced = false
                         )

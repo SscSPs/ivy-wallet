@@ -2,7 +2,7 @@ package com.ivy.legacy.domain.deprecated.logic
 
 import com.ivy.data.db.dao.read.BudgetDao
 import com.ivy.data.db.dao.write.WriteBudgetDao
-import com.ivy.legacy.datamodel.Budget
+import com.ivy.data.db.entity.BudgetEntity
 import com.ivy.legacy.utils.ioThread
 import com.ivy.wallet.domain.deprecated.logic.model.CreateBudgetData
 import com.ivy.wallet.domain.pure.util.nextOrderNum
@@ -14,7 +14,7 @@ class BudgetCreator @Inject constructor(
 ) {
     suspend fun createBudget(
         data: CreateBudgetData,
-        onRefreshUI: suspend (Budget) -> Unit
+        onRefreshUI: suspend (BudgetEntity) -> Unit
     ) {
         val name = data.name
         if (name.isBlank()) return
@@ -22,7 +22,7 @@ class BudgetCreator @Inject constructor(
 
         try {
             val newBudget = ioThread {
-                val budget = Budget(
+                val budget = BudgetEntity(
                     name = name.trim(),
                     amount = data.amount,
                     categoryIdsSerialized = data.categoryIdsSerialized,
@@ -31,7 +31,7 @@ class BudgetCreator @Inject constructor(
                     isSynced = false
                 )
 
-                budgetWriter.save(budget.toEntity())
+                budgetWriter.save(budget)
                 budget
             }
 
@@ -42,8 +42,8 @@ class BudgetCreator @Inject constructor(
     }
 
     suspend fun editBudget(
-        updatedBudget: Budget,
-        onRefreshUI: suspend (Budget) -> Unit
+        updatedBudget: BudgetEntity,
+        onRefreshUI: suspend (BudgetEntity) -> Unit
     ) {
         if (updatedBudget.name.isBlank()) return
         if (updatedBudget.amount <= 0.0) return
@@ -51,7 +51,7 @@ class BudgetCreator @Inject constructor(
         try {
             ioThread {
                 budgetWriter.save(
-                    updatedBudget.toEntity().copy(
+                    updatedBudget.copy(
                         isSynced = false
                     )
                 )
@@ -64,7 +64,7 @@ class BudgetCreator @Inject constructor(
     }
 
     suspend fun deleteBudget(
-        budget: Budget,
+        budget: BudgetEntity,
         onRefreshUI: suspend () -> Unit
     ) {
         try {

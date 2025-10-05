@@ -1,19 +1,18 @@
 package com.ivy.wallet.domain.action.budget
 
 import com.ivy.data.db.dao.read.BudgetDao
+import com.ivy.data.db.entity.BudgetEntity
 import com.ivy.frp.action.FPAction
 import com.ivy.frp.action.thenMap
 import com.ivy.frp.then
-import com.ivy.legacy.datamodel.Budget
-import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import javax.inject.Inject
 
 class BudgetsAct @Inject constructor(
     private val budgetDao: BudgetDao
-) : FPAction<Unit, ImmutableList<Budget>>() {
-    override suspend fun Unit.compose(): suspend () -> ImmutableList<Budget> = suspend {
+) : FPAction<Unit, ImmutableList<BudgetEntity>>() {
+    override suspend fun Unit.compose(): suspend () -> ImmutableList<BudgetEntity> = suspend {
         budgetDao.findAll()
-    } thenMap { it.toLegacyDomain() } then { it.toImmutableList() }
+    } thenMap { it } then { it.toImmutableList() }
 }
