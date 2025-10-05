@@ -13,6 +13,6 @@ class BudgetsAct @Inject constructor(
     private val budgetDao: BudgetDao
 ) : FPAction<Unit, ImmutableList<BudgetEntity>>() {
     override suspend fun Unit.compose(): suspend () -> ImmutableList<BudgetEntity> = suspend {
-        budgetDao.findAll()
-    } thenMap { it } then { it.toImmutableList() }
+        budgetDao.findAll().toImmutableList()
+    }
 }

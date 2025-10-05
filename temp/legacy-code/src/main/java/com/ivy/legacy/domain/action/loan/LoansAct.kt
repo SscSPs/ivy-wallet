@@ -13,6 +13,6 @@ class LoansAct @Inject constructor(
     private val loanDao: LoanDao
 ) : FPAction<Unit, ImmutableList<LoanEntity>>() {
     override suspend fun Unit.compose(): suspend () -> ImmutableList<LoanEntity> = suspend {
-        loanDao.findAll()
-    } thenMap { it } then { it.toImmutableList() }
+        loanDao.findAll().toImmutableList()
+    }
 }

@@ -45,7 +45,6 @@ import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.temp.humanReadableType
 import com.ivy.legacy.ui.component.ItemStatisticToolbar
 import com.ivy.legacy.ui.component.transaction.TypeAmountCurrency
 import com.ivy.legacy.utils.clickableNoIndication
@@ -366,7 +365,7 @@ private fun LoanItem(
                 Spacer(Modifier.width(8.dp))
 
                 Text(
-                    text = loan.humanReadableType(),
+                    text = loan.type.name,
                     style = UI.typo.c.style(
                         color = loan.color.toComposeColor().dynamicContrast()
                     )

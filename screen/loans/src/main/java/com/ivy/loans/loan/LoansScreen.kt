@@ -38,7 +38,6 @@ import com.ivy.data.model.LoanType
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
-import com.ivy.legacy.datamodel.temp.humanReadableType
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.utils.getDefaultFIATCurrency
 import com.ivy.legacy.utils.horizontalSwipeListener
@@ -341,7 +340,7 @@ private fun LoanHeader(
             Spacer(Modifier.width(8.dp))
 
             Text(
-                text = loan.humanReadableType(),
+                text = loan.type.name,
                 style = UI.typo.c.style(
                     color = loan.color.toComposeColor().dynamicContrast()
                 )
