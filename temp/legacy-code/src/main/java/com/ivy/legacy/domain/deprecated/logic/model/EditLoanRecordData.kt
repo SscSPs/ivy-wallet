@@ -1,10 +1,10 @@
 package com.ivy.wallet.domain.deprecated.logic.model
 
-import com.ivy.legacy.datamodel.LoanRecord
+import com.ivy.data.db.entity.LoanRecordEntity
 
 data class EditLoanRecordData(
-    val newLoanRecord: LoanRecord,
-    val originalLoanRecord: LoanRecord,
+    val newLoanRecord: LoanRecordEntity,
+    val originalLoanRecord: LoanRecordEntity,
     val createLoanRecordTransaction: Boolean = false,
     val reCalculateLoanAmount: Boolean = false
 )

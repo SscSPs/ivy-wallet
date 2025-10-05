@@ -38,13 +38,13 @@ import com.ivy.base.model.LoanRecordType
 import com.ivy.base.model.TransactionType
 import com.ivy.base.model.processByType
 import com.ivy.data.db.entity.LoanEntity
+import com.ivy.data.db.entity.LoanRecordEntity
 import com.ivy.data.model.LoanType
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.LoanRecord
 import com.ivy.legacy.datamodel.temp.humanReadableType
 import com.ivy.legacy.ui.component.ItemStatisticToolbar
 import com.ivy.legacy.ui.component.transaction.TypeAmountCurrency
@@ -639,7 +639,7 @@ fun LazyListScope.loanRecords(
 @Composable
 private fun LoanRecordItem(
     loan: LoanEntity,
-    loanRecord: LoanRecord,
+    loanRecord: LoanRecordEntity,
     baseCurrency: String,
     loanBaseCurrency: String = "",
     account: Account? = null,
@@ -939,7 +939,7 @@ private fun Preview_Records(theme: Theme = Theme.LIGHT) {
                 ),
                 displayLoanRecords = persistentListOf(
                     DisplayLoanRecord(
-                        LoanRecord(
+                        LoanRecordEntity(
                             amount = 123.45,
                             dateTime = testDateTime.minusDays(1).toInstant(ZoneOffset.UTC),
                             note = "Cash",
@@ -948,7 +948,7 @@ private fun Preview_Records(theme: Theme = Theme.LIGHT) {
                         )
                     ),
                     DisplayLoanRecord(
-                        LoanRecord(
+                        LoanRecordEntity(
                             amount = 0.50,
                             dateTime = testDateTime.minusYears(1).toInstant(ZoneOffset.UTC),
                             loanId = UUID.randomUUID(),
@@ -956,7 +956,7 @@ private fun Preview_Records(theme: Theme = Theme.LIGHT) {
                         )
                     ),
                     DisplayLoanRecord(
-                        LoanRecord(
+                        LoanRecordEntity(
                             amount = 1000.00,
                             dateTime = testDateTime.minusMonths(1).toInstant(ZoneOffset.UTC),
                             note = "Revolut",

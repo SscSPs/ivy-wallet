@@ -1,7 +1,7 @@
 package com.ivy.wallet.domain.deprecated.logic
 
 import com.ivy.data.db.dao.write.WriteLoanRecordDao
-import com.ivy.legacy.datamodel.LoanRecord
+import com.ivy.data.db.entity.LoanRecordEntity
 import com.ivy.legacy.utils.ioThread
 import com.ivy.wallet.domain.deprecated.logic.model.CreateLoanRecordData
 import java.util.UUID
@@ -13,15 +13,15 @@ class LoanRecordCreator @Inject constructor(
     suspend fun create(
         loanId: UUID,
         data: CreateLoanRecordData,
-        onRefreshUI: suspend (LoanRecord) -> Unit
+        onRefreshUI: suspend (LoanRecordEntity) -> Unit
     ): UUID? {
         val note = data.note
         if (data.amount <= 0) return null
 
         try {
-            var newItem: LoanRecord? = null
+            var newItem: LoanRecordEntity? = null
             newItem = ioThread {
-                val item = LoanRecord(
+                val item = LoanRecordEntity(
                     loanId = loanId,
                     note = note?.trim(),
                     amount = data.amount,
@@ -33,7 +33,7 @@ class LoanRecordCreator @Inject constructor(
                     loanRecordType = data.loanRecordType
                 )
 
-                loanRecordWriter.save(item.toEntity())
+                loanRecordWriter.save(item)
                 item
             }
 
@@ -46,15 +46,15 @@ class LoanRecordCreator @Inject constructor(
     }
 
     suspend fun edit(
-        updatedItem: LoanRecord,
-        onRefreshUI: suspend (LoanRecord) -> Unit
+        updatedItem: LoanRecordEntity,
+        onRefreshUI: suspend (LoanRecordEntity) -> Unit
     ) {
         if (updatedItem.amount <= 0.0) return
 
         try {
             ioThread {
                 loanRecordWriter.save(
-                    updatedItem.toEntity().copy(
+                    updatedItem.copy(
                         isSynced = false
                     )
                 )
@@ -67,7 +67,7 @@ class LoanRecordCreator @Inject constructor(
     }
 
     suspend fun delete(
-        item: LoanRecord,
+        item: LoanRecordEntity,
         onRefreshUI: suspend () -> Unit
     ) {
         try {

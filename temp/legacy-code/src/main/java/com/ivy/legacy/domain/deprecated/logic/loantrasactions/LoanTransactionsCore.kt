@@ -13,6 +13,7 @@ import com.ivy.data.db.dao.read.TransactionDao
 import com.ivy.data.db.dao.write.WriteLoanDao
 import com.ivy.data.db.dao.write.WriteLoanRecordDao
 import com.ivy.data.db.entity.LoanEntity
+import com.ivy.data.db.entity.LoanRecordEntity
 import com.ivy.data.model.Category
 import com.ivy.data.model.CategoryId
 import com.ivy.data.model.LoanType
@@ -26,7 +27,6 @@ import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.design.IVY_COLOR_PICKER_COLORS_FREE
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.LoanRecord
 import com.ivy.legacy.datamodel.temp.toDomain
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import com.ivy.legacy.utils.computationThread
@@ -310,12 +310,12 @@ class LoanTransactionsCore @Inject constructor(
         accountsDao.findAll()
     }
 
-    suspend fun saveLoanRecords(loanRecords: List<LoanRecord>) = ioThread {
-        writeLoanRecordDao.saveMany(loanRecords.map { it.toEntity() })
+    suspend fun saveLoanRecords(loanRecords: List<LoanRecordEntity>) = ioThread {
+        writeLoanRecordDao.saveMany(loanRecords.map { it })
     }
 
-    suspend fun saveLoanRecords(loanRecord: LoanRecord) = ioThread {
-        writeLoanRecordDao.save(loanRecord.toEntity())
+    suspend fun saveLoanRecords(loanRecord: LoanRecordEntity) = ioThread {
+        writeLoanRecordDao.save(loanRecord)
     }
 
     suspend fun saveLoan(loan: LoanEntity) = ioThread {

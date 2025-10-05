@@ -32,6 +32,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ivy.base.model.LoanRecordType
+import com.ivy.data.db.entity.LoanRecordEntity
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.l0_system.UI
@@ -40,7 +41,6 @@ import com.ivy.design.utils.thenIf
 import com.ivy.frp.test.TestingContext
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.LoanRecord
 import com.ivy.legacy.legacy.ui.theme.components.DateTimeRow
 import com.ivy.legacy.legacy.ui.theme.modal.ModalNameInput
 import com.ivy.legacy.utils.getDefaultFIATCurrency
@@ -64,7 +64,7 @@ import java.util.UUID
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 data class LoanRecordModalData(
-    val loanRecord: LoanRecord?,
+    val loanRecord: LoanRecordEntity?,
     val baseCurrency: String,
     val loanAccountCurrencyCode: String? = null,
     val selectedAccount: Account? = null,
@@ -84,7 +84,7 @@ fun BoxWithConstraintsScope.LoanRecordModal(
     onSetTime: () -> Unit,
     onCreate: (CreateLoanRecordData) -> Unit,
     onEdit: (EditLoanRecordData) -> Unit,
-    onDelete: (LoanRecord) -> Unit,
+    onDelete: (LoanRecordEntity) -> Unit,
     dismiss: () -> Unit,
     accounts: List<Account> = emptyList(),
     onCreateAccount: (CreateAccountData) -> Unit = {},
@@ -382,7 +382,7 @@ fun BoxWithConstraintsScope.LoanRecordModal(
 }
 
 private fun save(
-    loanRecord: LoanRecord?,
+    loanRecord: LoanRecordEntity?,
     noteTextFieldValue: TextFieldValue,
     amount: Double,
     dateTime: Instant,

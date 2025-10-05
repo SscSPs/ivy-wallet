@@ -13,13 +13,12 @@ import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.LoanRecordDao
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.entity.LoanEntity
+import com.ivy.data.db.entity.LoanRecordEntity
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.frp.test.TestIdlingResource
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.LoanRecord
 import com.ivy.legacy.datamodel.temp.toLegacy
-import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import com.ivy.legacy.domain.deprecated.logic.AccountCreator
 import com.ivy.legacy.utils.computationThread
 import com.ivy.legacy.utils.ioThread
@@ -289,7 +288,7 @@ class LoanDetailsViewModel @Inject constructor(
                         )
 
                         DisplayLoanRecord(
-                            it.toLegacyDomain(),
+                            it,
                             account = account,
                             loanRecordTransaction = trans != null,
                             loanRecordCurrencyCode = account?.currency ?: defaultCurrencyCode,
@@ -461,7 +460,7 @@ class LoanDetailsViewModel @Inject constructor(
         }
     }
 
-    private fun deleteLoanRecord(loanRecord: LoanRecord) {
+    private fun deleteLoanRecord(loanRecord: LoanRecordEntity) {
         val loanId = loan.value?.id ?: return
 
         viewModelScope.launch {

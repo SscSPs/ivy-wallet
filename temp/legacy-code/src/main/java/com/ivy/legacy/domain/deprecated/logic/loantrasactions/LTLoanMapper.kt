@@ -4,9 +4,9 @@ import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.LoanRecordType
 import com.ivy.base.model.TransactionType
 import com.ivy.data.db.entity.LoanEntity
+import com.ivy.data.db.entity.LoanRecordEntity
 import com.ivy.data.model.LoanType
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.LoanRecord
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import com.ivy.legacy.domain.deprecated.logic.loantrasactions.LoanTransactionsCore
 import com.ivy.legacy.utils.computationThread
@@ -98,7 +98,7 @@ class LTLoanMapper @Inject constructor(
             val loan = ltCore.fetchLoan(transaction.loanId!!) ?: return@computationThread
 
             if (accountsChanged) {
-                val newLoanRecords: List<LoanRecord> = calculateLoanRecords(
+                val newLoanRecords: List<LoanRecordEntity> = calculateLoanRecords(
                     loanId = transaction.loanId!!,
                     newAccountId = transaction.accountId
                 )
@@ -120,11 +120,10 @@ class LTLoanMapper @Inject constructor(
     private suspend fun calculateLoanRecords(
         newAccountId: UUID?,
         loanId: UUID
-    ): List<LoanRecord> {
+    ): List<LoanRecordEntity> {
         return scopedIOThread { scope ->
             val loanRecords =
                 ltCore.fetchAllLoanRecords(loanId = loanId)
-                    .map { it.toLegacyDomain() }
                     .map { loanRecord ->
                         scope.async {
                             val convertedAmount: Double? =

@@ -2,7 +2,7 @@ package com.ivy.wallet.domain.deprecated.logic.loantrasactions
 
 import com.ivy.base.legacy.Transaction
 import com.ivy.data.db.entity.LoanEntity
-import com.ivy.legacy.datamodel.LoanRecord
+import com.ivy.data.db.entity.LoanRecordEntity
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import com.ivy.legacy.domain.deprecated.logic.loantrasactions.LoanTransactionsCore
 import com.ivy.legacy.utils.computationThread
@@ -15,7 +15,7 @@ class LTLoanRecordMapper @Inject constructor(
 ) {
     suspend fun editAssociatedLoanRecordTransaction(
         loan: LoanEntity,
-        loanRecord: LoanRecord,
+        loanRecord: LoanRecordEntity,
         createLoanRecordTransaction: Boolean,
     ) {
         computationThread {
@@ -92,15 +92,15 @@ class LTLoanRecordMapper @Inject constructor(
                 accountId = transaction.accountId,
                 convertedAmount = convertedAmount
             )
-            ltCore.saveLoanRecords(modifiedLoanRecord.toLegacyDomain())
+            ltCore.saveLoanRecords(modifiedLoanRecord)
         }
         onBackgroundProcessingEnd()
     }
 
     suspend fun calculateConvertedAmount(
         loanAccountId: UUID?,
-        newLoanRecord: LoanRecord,
-        oldLoanRecord: LoanRecord,
+        newLoanRecord: LoanRecordEntity,
+        oldLoanRecord: LoanRecordEntity,
         reCalculateLoanAmount: Boolean = false,
     ): Double? {
         return ltCore.computeConvertedAmount(
