@@ -1,11 +1,11 @@
 package com.ivy.loans.loan.data
 
-import com.ivy.legacy.datamodel.Loan
+import com.ivy.data.db.entity.LoanEntity
 import com.ivy.legacy.utils.getDefaultFIATCurrency
 import com.ivy.wallet.domain.data.Reorderable
 
 data class DisplayLoan(
-    val loan: Loan,
+    val loan: LoanEntity,
     val loanTotalAmount: Double,
     val amountPaid: Double,
     val currencyCode: String? = getDefaultFIATCurrency().currencyCode,

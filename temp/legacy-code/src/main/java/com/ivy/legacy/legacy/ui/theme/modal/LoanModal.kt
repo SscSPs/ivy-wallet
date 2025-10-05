@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.ivy.data.db.entity.LoanEntity
 import com.ivy.data.model.LoanType
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.design.api.LocalTimeConverter
@@ -43,7 +44,6 @@ import com.ivy.domain.legacy.ui.IvyColorPicker
 import com.ivy.frp.test.TestingContext
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.Loan
 import com.ivy.legacy.legacy.ui.theme.components.DateTimeRow
 import com.ivy.legacy.utils.getDefaultFIATCurrency
 import com.ivy.legacy.utils.isNotNullOrBlank
@@ -75,7 +75,7 @@ import java.util.UUID
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 data class LoanModalData(
-    val loan: Loan?,
+    val loan: LoanEntity?,
     val baseCurrency: String,
     val selectedAccount: Account? = null,
     val autoFocusKeyboard: Boolean = true,
@@ -93,7 +93,7 @@ fun BoxWithConstraintsScope.LoanModal(
     onSetDate: () -> Unit,
     onSetTime: () -> Unit,
     onCreateLoan: (CreateLoanData) -> Unit,
-    onEditLoan: (Loan, Boolean) -> Unit,
+    onEditLoan: (LoanEntity, Boolean) -> Unit,
     accounts: List<Account> = emptyList(),
     onCreateAccount: (CreateAccountData) -> Unit = {},
     onPerformCalculations: () -> Unit = {},
@@ -602,7 +602,7 @@ private fun RowScope.SelectorButton(
 }
 
 private fun save(
-    loan: Loan?,
+    loan: LoanEntity?,
     nameTextFieldValue: TextFieldValue,
     dateTime: LocalDateTime,
     noteTextFieldValue: TextFieldValue,
@@ -614,7 +614,7 @@ private fun save(
     createLoanTransaction: Boolean = false,
 
     onCreateLoan: (CreateLoanData) -> Unit,
-    onEditLoan: (Loan, Boolean) -> Unit,
+    onEditLoan: (LoanEntity, Boolean) -> Unit,
     dismiss: () -> Unit
 ) {
     if (loan != null) {

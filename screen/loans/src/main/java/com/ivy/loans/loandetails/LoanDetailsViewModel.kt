@@ -12,11 +12,11 @@ import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.LoanRecordDao
 import com.ivy.data.db.dao.read.SettingsDao
+import com.ivy.data.db.entity.LoanEntity
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.frp.test.TestIdlingResource
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.Loan
 import com.ivy.legacy.datamodel.LoanRecord
 import com.ivy.legacy.datamodel.temp.toLegacy
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
@@ -72,7 +72,7 @@ class LoanDetailsViewModel @Inject constructor(
 ) : ComposeViewModel<LoanDetailsScreenState, LoanDetailsScreenEvent>() {
 
     private val baseCurrency = mutableStateOf("")
-    private val loan = mutableStateOf<Loan?>(null)
+    private val loan = mutableStateOf<LoanEntity?>(null)
     private val displayLoanRecords =
         mutableStateOf<ImmutableList<DisplayLoanRecord>>(persistentListOf())
     private val loanTotalAmount = mutableDoubleStateOf(0.0)
@@ -353,7 +353,7 @@ class LoanDetailsViewModel @Inject constructor(
         }
     }
 
-    fun editLoan(loan: Loan, createLoanTransaction: Boolean = false) {
+    fun editLoan(loan: LoanEntity, createLoanTransaction: Boolean = false) {
         viewModelScope.launch {
             TestIdlingResource.increment()
 
@@ -435,7 +435,7 @@ class LoanDetailsViewModel @Inject constructor(
             val loanRecord = editLoanRecordData.newLoanRecord
             TestIdlingResource.increment()
 
-            val localLoan: Loan = loan.value ?: return@launch
+            val localLoan: LoanEntity = loan.value ?: return@launch
 
             val convertedAmount = loanTransactionsLogic.LoanRecord.calculateConvertedAmount(
                 loanAccountId = localLoan.accountId,

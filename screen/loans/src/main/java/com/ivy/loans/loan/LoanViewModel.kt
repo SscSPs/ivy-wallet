@@ -14,10 +14,10 @@ import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.LoanRecordDao
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.write.WriteLoanDao
+import com.ivy.data.db.entity.LoanEntity
 import com.ivy.data.model.LoanType
 import com.ivy.frp.test.TestIdlingResource
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.Loan
 import com.ivy.legacy.domain.deprecated.logic.AccountCreator
 import com.ivy.legacy.utils.format
 import com.ivy.legacy.utils.getDefaultFIATCurrency
@@ -335,7 +335,7 @@ class LoanViewModel @Inject constructor(
             ioThread {
                 newOrder.forEachIndexed { index, item ->
                     loanWriter.save(
-                        item.loan.toEntity().copy(
+                        item.loan.copy(
                             orderNum = index.toDouble(),
                             isSynced = false
                         )
@@ -393,7 +393,7 @@ class LoanViewModel @Inject constructor(
      *  Calculates the total amount paid and the total loan amount including any changes made to the loan.
      *  @return A Pair containing the total amount paid and the total loan amount.
      */
-    private suspend fun calculateAmountPaidAndTotalAmount(loan: Loan): Pair<Double, Double> {
+    private suspend fun calculateAmountPaidAndTotalAmount(loan: LoanEntity): Pair<Double, Double> {
         val loanRecords = ioThread { loanRecordDao.findAllByLoanId(loanId = loan.id) }
         val (amountPaid, loanTotalAmount) = loanRecords.fold(0.0 to loan.amount) { value, loanRecord ->
             val (currentAmountPaid, currentLoanTotalAmount) = value

@@ -1,7 +1,7 @@
 package com.ivy.wallet.domain.deprecated.logic.loantrasactions
 
 import com.ivy.base.legacy.Transaction
-import com.ivy.legacy.datamodel.Loan
+import com.ivy.data.db.entity.LoanEntity
 import com.ivy.legacy.datamodel.LoanRecord
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import com.ivy.legacy.domain.deprecated.logic.loantrasactions.LoanTransactionsCore
@@ -14,7 +14,7 @@ class LTLoanRecordMapper @Inject constructor(
     private val ltCore: LoanTransactionsCore
 ) {
     suspend fun editAssociatedLoanRecordTransaction(
-        loan: Loan,
+        loan: LoanEntity,
         loanRecord: LoanRecord,
         createLoanRecordTransaction: Boolean,
     ) {
@@ -37,7 +37,7 @@ class LTLoanRecordMapper @Inject constructor(
     }
 
     suspend fun createAssociatedLoanRecordTransaction(
-        loan: Loan,
+        loan: LoanEntity,
         loanRecordId: UUID,
         data: CreateLoanRecordData,
     ) {

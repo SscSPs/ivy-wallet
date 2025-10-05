@@ -3,7 +3,7 @@ package com.ivy.wallet.domain.deprecated.logic
 import androidx.compose.ui.graphics.toArgb
 import com.ivy.data.db.dao.read.LoanDao
 import com.ivy.data.db.dao.write.WriteLoanDao
-import com.ivy.legacy.datamodel.Loan
+import com.ivy.data.db.entity.LoanEntity
 import com.ivy.legacy.utils.ioThread
 import com.ivy.wallet.domain.deprecated.logic.model.CreateLoanData
 import com.ivy.wallet.domain.pure.util.nextOrderNum
@@ -16,7 +16,7 @@ class LoanCreator @Inject constructor(
 ) {
     suspend fun create(
         data: CreateLoanData,
-        onRefreshUI: suspend (Loan) -> Unit
+        onRefreshUI: suspend (LoanEntity) -> Unit
     ): UUID? {
         val name = data.name
         if (name.isBlank()) return null
@@ -26,7 +26,7 @@ class LoanCreator @Inject constructor(
 
         try {
             val newItem = ioThread {
-                val item = Loan(
+                val item = LoanEntity(
                     name = name.trim(),
                     amount = data.amount,
                     type = data.type,
@@ -39,7 +39,7 @@ class LoanCreator @Inject constructor(
                     dateTime = data.dateTime
                 )
                 loanId = item.id
-                loanWriter.save(item.toEntity())
+                loanWriter.save(item)
                 item
             }
 
@@ -52,8 +52,8 @@ class LoanCreator @Inject constructor(
     }
 
     suspend fun edit(
-        updatedItem: Loan,
-        onRefreshUI: suspend (Loan) -> Unit
+        updatedItem: LoanEntity,
+        onRefreshUI: suspend (LoanEntity) -> Unit
     ) {
         if (updatedItem.name.isBlank()) return
         if (updatedItem.amount <= 0.0) return
@@ -61,7 +61,7 @@ class LoanCreator @Inject constructor(
         try {
             ioThread {
                 loanWriter.save(
-                    updatedItem.toEntity().copy(
+                    updatedItem.copy(
                         isSynced = false
                     )
                 )
@@ -74,7 +74,7 @@ class LoanCreator @Inject constructor(
     }
 
     suspend fun delete(
-        item: Loan,
+        item: LoanEntity,
         onRefreshUI: suspend () -> Unit
     ) {
         try {

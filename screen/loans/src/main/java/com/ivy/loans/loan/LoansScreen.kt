@@ -33,12 +33,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ivy.base.legacy.Theme
+import com.ivy.data.db.entity.LoanEntity
 import com.ivy.data.model.LoanType
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
-import com.ivy.legacy.datamodel.Loan
-import com.ivy.legacy.humanReadableType
+import com.ivy.legacy.datamodel.temp.humanReadableType
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.utils.getDefaultFIATCurrency
 import com.ivy.legacy.utils.horizontalSwipeListener
@@ -449,7 +449,7 @@ private fun Preview(theme: Theme = Theme.LIGHT) {
         selectedTab = LoanTab.PENDING,
         completedLoans = persistentListOf(
             DisplayLoan(
-                loan = Loan(
+                loan = LoanEntity(
                     name = "Loan 3",
                     icon = "bank",
                     color = Blue.toArgb(),
@@ -464,7 +464,7 @@ private fun Preview(theme: Theme = Theme.LIGHT) {
         ),
         pendingLoans = persistentListOf(
             DisplayLoan(
-                loan = Loan(
+                loan = LoanEntity(
                     name = "Loan 3",
                     icon = "bank",
                     color = Blue.toArgb(),

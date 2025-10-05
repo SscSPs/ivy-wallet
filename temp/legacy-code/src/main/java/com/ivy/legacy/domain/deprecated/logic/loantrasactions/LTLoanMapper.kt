@@ -3,9 +3,9 @@ package com.ivy.wallet.domain.deprecated.logic.loantrasactions
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.model.LoanRecordType
 import com.ivy.base.model.TransactionType
+import com.ivy.data.db.entity.LoanEntity
 import com.ivy.data.model.LoanType
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.Loan
 import com.ivy.legacy.datamodel.LoanRecord
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
 import com.ivy.legacy.domain.deprecated.logic.loantrasactions.LoanTransactionsCore
@@ -37,7 +37,7 @@ class LTLoanMapper @Inject constructor(
     }
 
     suspend fun editAssociatedLoanTransaction(
-        loan: Loan,
+        loan: LoanEntity,
         createLoanTransaction: Boolean = false,
         transaction: Transaction?
     ) {
@@ -112,7 +112,7 @@ class LTLoanMapper @Inject constructor(
                 accountId = transaction.accountId
             )
 
-            ltCore.saveLoan(modifiedLoan.toLegacyDomain())
+            ltCore.saveLoan(modifiedLoan)
         }
         onBackgroundProcessingEnd()
     }

@@ -37,15 +37,15 @@ import com.ivy.base.legacy.Theme
 import com.ivy.base.model.LoanRecordType
 import com.ivy.base.model.TransactionType
 import com.ivy.base.model.processByType
+import com.ivy.data.db.entity.LoanEntity
 import com.ivy.data.model.LoanType
 import com.ivy.design.api.LocalTimeFormatter
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
-import com.ivy.legacy.datamodel.Loan
 import com.ivy.legacy.datamodel.LoanRecord
-import com.ivy.legacy.humanReadableType
+import com.ivy.legacy.datamodel.temp.humanReadableType
 import com.ivy.legacy.ui.component.ItemStatisticToolbar
 import com.ivy.legacy.ui.component.transaction.TypeAmountCurrency
 import com.ivy.legacy.utils.clickableNoIndication
@@ -262,7 +262,7 @@ private fun BoxWithConstraintsScope.UI(
 
 @Composable
 private fun Header(
-    loan: Loan,
+    loan: LoanEntity,
     baseCurrency: String,
     loanTotalAmount: Double,
     amountPaid: Double,
@@ -329,7 +329,7 @@ private fun Header(
 
 @Composable
 private fun LoanItem(
-    loan: Loan,
+    loan: LoanEntity,
     contrastColor: Color,
 
     onClick: () -> Unit,
@@ -390,7 +390,7 @@ private fun LoanItem(
 @Suppress("LongMethod")
 @Composable
 private fun LoanInfoCard(
-    loan: Loan,
+    loan: LoanEntity,
     baseCurrency: String,
     loanTotalAmount: Double,
     amountPaid: Double,
@@ -617,7 +617,7 @@ private fun LoanInfoCard(
 }
 
 fun LazyListScope.loanRecords(
-    loan: Loan,
+    loan: LoanEntity,
     displayLoanRecords: List<DisplayLoanRecord> = emptyList(),
     onClick: (DisplayLoanRecord) -> Unit
 ) {
@@ -638,7 +638,7 @@ fun LazyListScope.loanRecords(
 
 @Composable
 private fun LoanRecordItem(
-    loan: Loan,
+    loan: LoanEntity,
     loanRecord: LoanRecord,
     baseCurrency: String,
     loanBaseCurrency: String = "",
@@ -782,7 +782,7 @@ private fun LoanRecordItem(
 
 @Composable
 private fun InitialRecordItem(
-    loan: Loan,
+    loan: LoanEntity,
     amount: Double,
     baseCurrency: String,
 ) {
@@ -896,7 +896,7 @@ private fun Preview_Empty() {
         UI(
             LoanDetailsScreenState(
                 baseCurrency = "BGN",
-                loan = Loan(
+                loan = LoanEntity(
                     name = "Loan 1",
                     amount = 4023.54,
                     color = Red.toArgb(),
@@ -930,7 +930,7 @@ private fun Preview_Records(theme: Theme = Theme.LIGHT) {
         UI(
             LoanDetailsScreenState(
                 baseCurrency = "BGN",
-                loan = Loan(
+                loan = LoanEntity(
                     name = "Loan 1",
                     amount = 4023.54,
                     color = Red.toArgb(),
