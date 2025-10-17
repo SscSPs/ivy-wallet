@@ -124,6 +124,7 @@ suspend fun Iterable<Transaction>.sumInBaseCurrency(
     accountDao: AccountDao,
 ): Double {
     val baseCurrency = settingsDao.findFirst().currency
+    // Include archived accounts for complete balance calculation
     val accounts = accountDao.findAll()
 
     return sumOf {
@@ -142,6 +143,7 @@ suspend fun Iterable<PlannedPaymentRule>.sumByDoublePlannedInBaseCurrency(
     accountDao: AccountDao,
 ): Double {
     val baseCurrency = settingsDao.findFirst().currency
+    // Include archived accounts for complete balance calculation
     val accounts = accountDao.findAll()
 
     return sumOf {

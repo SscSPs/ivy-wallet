@@ -23,6 +23,7 @@ data class Account(
     val icon: String? = null,
     val orderNum: Double = 0.0,
     val includeInBalance: Boolean = true,
+    val archived: Boolean = false,
 
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false,
@@ -38,7 +39,8 @@ data class Account(
         includeInBalance = includeInBalance,
         isSynced = isSynced,
         isDeleted = isDeleted,
-        id = id
+        id = id,
+        archived = archived
     )
 
     @Suppress("DataClassFunctions")
@@ -55,6 +57,7 @@ data class Account(
                 icon = icon?.let(IconAsset::from)?.getOrNull(),
                 includeInBalance = includeInBalance,
                 orderNum = orderNum,
+                archived = archived
             )
         }
     }

@@ -52,7 +52,7 @@ class ExportCsvUseCase @Inject constructor(
         exportScope: suspend TransactionRepository.() -> List<Transaction>
     ): String = withContext(dispatchers.io) {
         val transactions = transactionRepository.exportScope()
-        val accountsMap = accountRepository.findAll().associateBy(Account::id)
+        val accountsMap = accountRepository.findAll(includeArchived = true).associateBy(Account::id)
         val categoriesMap = categoryRepository.findAll().associateBy(Category::id)
 
         buildString {

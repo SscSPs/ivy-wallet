@@ -95,6 +95,7 @@ class CSVImporter @Inject constructor(
         newCategoryColorIndex = 0
         newAccountColorIndex = 0
 
+        // Include archived accounts for CSV import
         accounts = accountDao.findAll().map { it.toLegacyDomain() }
         val initialAccountsCount = accounts.size
 
@@ -479,6 +480,7 @@ class CSVImporter @Inject constructor(
         val domainAccount = newAccount.toDomainAccount(currencyRepository).getOrNull()
             ?: return null
         accountRepository.save(domainAccount)
+        // Include archived accounts for CSV import
         accounts = accountDao.findAll().map { it.toLegacyDomain() }
 
         return newAccount

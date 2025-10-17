@@ -22,7 +22,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorMatrix
+import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -192,8 +204,23 @@ private fun BoxWithConstraintsScope.UI(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(end = 24.dp)
-                .padding(vertical = 8.dp),
-            text = item.account.name.value,
+                .padding(vertical = 8.dp)
+                .drawWithContent( {
+                    val paint = Paint().apply {
+                        colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                            ColorMatrix().apply {
+                                setToSaturation(if (item.account.archived) 0.3f else 1.0f ) // Desaturate to 30%
+                            }
+                        )
+                        alpha = if (item.account.archived) 0.7f else 1f
+                    }
+                    drawIntoCanvas { canvas ->
+                        canvas.saveLayer(size.toRect(), paint)
+                        drawContent()
+                        canvas.nativeCanvas.restore()
+                    }
+                }),
+            text = (if (item.account.archived) "* ("+ stringResource(R.string.archived) + ") - " else "") + item.account.name.value,
             style = UI.typo.b1.style(
                 color = item.account.color.value.toComposeColor(),
                 fontWeight = FontWeight.Bold
@@ -210,12 +237,55 @@ private fun AccountCard(
     onBalanceClick: () -> Unit,
     onClick: () -> Unit
 ) {
+    val account = accountData.account
+    val isArchived = account.archived
+    val midCol = UI.colors.medium
+    
     Column(
         modifier = Modifier
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .clip(UI.shapes.r4)
-            .border(2.dp, UI.colors.medium, UI.shapes.r4)
+            .border(2.dp, midCol, UI.shapes.r4)
+            .then(
+                if (isArchived) {
+                    Modifier
+                        .drawBehind {
+                            val strokeWidth = 10f
+                            val dashWidth = 30f
+                            val dashGap = 20f
+                            val cornerRadius = 16f
+
+                            drawRoundRect(
+                                color = midCol,
+                                topLeft = Offset(strokeWidth / 2, strokeWidth / 2),
+                                size = Size(size.width - strokeWidth, size.height - strokeWidth),
+                                cornerRadius = CornerRadius(cornerRadius),
+                                style = Stroke(
+                                    width = strokeWidth,
+                                    pathEffect = PathEffect.dashPathEffect(
+                                        floatArrayOf(dashWidth, dashGap), 0f
+                                    )
+                                )
+                            )
+                        }
+                        .drawWithContent {
+                            val paint = Paint().apply {
+                                colorFilter = androidx.compose.ui.graphics.ColorFilter.colorMatrix(
+                                    ColorMatrix().apply {
+                                        setToSaturation(0.3f) // Desaturate to 30%
+                                    }
+                                )
+                                alpha = 0.7f
+                            }
+                            drawIntoCanvas { canvas ->
+                                canvas.saveLayer(size.toRect(), paint)
+                                drawContent()
+                                canvas.nativeCanvas.restore()
+                            }
+                        }
+                } else Modifier
+            )
             .clickable(
                 onClick = onClick
             )
@@ -296,6 +366,17 @@ private fun AccountHeader(
                     )
                 )
             }
+
+            if (account.archived) {
+                Spacer(Modifier.width(8.dp))
+
+                Text(
+                    text = stringResource(R.string.archived),
+                    style = UI.typo.c.style(
+                        color = account.color.value.toComposeColor().dynamicContrast()
+                    )
+                )
+            }
         }
 
         Spacer(Modifier.height(4.dp))
@@ -347,6 +428,7 @@ private fun PreviewAccountsTabCompactModeDisabled(theme: Theme = Theme.LIGHT) {
             icon = null,
             includeInBalance = true,
             orderNum = 0.0,
+            archived = true
         )
 
         val acc2 = Account(
@@ -357,6 +439,7 @@ private fun PreviewAccountsTabCompactModeDisabled(theme: Theme = Theme.LIGHT) {
             icon = null,
             includeInBalance = true,
             orderNum = 0.0,
+            archived = false
         )
 
         val acc3 = Account(
@@ -367,6 +450,7 @@ private fun PreviewAccountsTabCompactModeDisabled(theme: Theme = Theme.LIGHT) {
             icon = IconAsset.unsafe("revolut"),
             includeInBalance = true,
             orderNum = 0.0,
+            archived = false
         )
 
         val acc4 = Account(
@@ -377,6 +461,7 @@ private fun PreviewAccountsTabCompactModeDisabled(theme: Theme = Theme.LIGHT) {
             icon = IconAsset.unsafe("cash"),
             includeInBalance = true,
             orderNum = 0.0,
+            archived = false
         )
         val state = AccountsState(
             baseCurrency = "BGN",
@@ -434,6 +519,7 @@ private fun PreviewAccountsTabCompactModeEnabled(theme: Theme = Theme.LIGHT) {
             icon = null,
             includeInBalance = true,
             orderNum = 0.0,
+            archived = true
         )
 
         val acc2 = Account(
@@ -444,6 +530,7 @@ private fun PreviewAccountsTabCompactModeEnabled(theme: Theme = Theme.LIGHT) {
             icon = null,
             includeInBalance = true,
             orderNum = 0.0,
+            archived = false
         )
 
         val acc3 = Account(
@@ -454,6 +541,7 @@ private fun PreviewAccountsTabCompactModeEnabled(theme: Theme = Theme.LIGHT) {
             icon = IconAsset.unsafe("revolut"),
             includeInBalance = true,
             orderNum = 0.0,
+            archived = false
         )
 
         val acc4 = Account(
@@ -464,6 +552,7 @@ private fun PreviewAccountsTabCompactModeEnabled(theme: Theme = Theme.LIGHT) {
             icon = IconAsset.unsafe("cash"),
             includeInBalance = true,
             orderNum = 0.0,
+            archived = false
         )
         val state = AccountsState(
             baseCurrency = "BGN",

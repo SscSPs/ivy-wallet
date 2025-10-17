@@ -481,9 +481,10 @@ private fun Preview_Expense() {
     com.ivy.legacy.IvyWalletPreview {
         val state = PieChartStatisticState(
             transactionType = TransactionType.EXPENSE,
-            period = com.ivy.legacy.data.model.TimePeriod.currentMonth(
-                startDayOfMonth = 1
-            ), // preview
+            period = com.ivy.legacy.data.model.TimePeriod(
+                month = com.ivy.legacy.data.model.Month(monthValue = 1, name = "January"),
+                year = 2024
+            ), // preview - using mock data to avoid context dependency
             baseCurrency = "BGN",
             totalAmount = 1828.0,
             categoryAmounts = persistentListOf(
@@ -572,9 +573,10 @@ private fun Preview_Income() {
     com.ivy.legacy.IvyWalletPreview {
         val state = PieChartStatisticState(
             transactionType = TransactionType.INCOME,
-            period = com.ivy.legacy.data.model.TimePeriod.currentMonth(
-                startDayOfMonth = 1
-            ), // preview
+            period = com.ivy.legacy.data.model.TimePeriod(
+                month = com.ivy.legacy.data.model.Month(monthValue = 1, name = "January"),
+                year = 2024
+            ), // preview - using mock data to avoid context dependency
             baseCurrency = "BGN",
             totalAmount = 1828.0,
             categoryAmounts = persistentListOf(

@@ -32,7 +32,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
@@ -79,6 +84,7 @@ import com.ivy.wallet.ui.theme.components.BalanceRow
 import com.ivy.wallet.ui.theme.components.CircleButton
 import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.IvyButton
+import com.ivy.wallet.ui.theme.components.IvyCheckboxWithText
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.modal.DURATION_MODAL_ANIM
@@ -115,9 +121,11 @@ fun BoxWithConstraintsScope.EditBottomSheet(
     modifier: Modifier = Modifier, // Modifier comes after other parameters
     convertedAmount: Double? = null,
     convertedAmountCurrencyCode: String? = null,
+    showArchivedInitial: Boolean? = false,
 ) {
     val rootView = LocalView.current
     var keyboardShown by remember { mutableStateOf(false) }
+    var showArchived by remember { mutableStateOf(showArchivedInitial) }
 
     onScreenStart {
         rootView.addKeyboardListener {
@@ -210,6 +218,7 @@ fun BoxWithConstraintsScope.EditBottomSheet(
             accounts = accounts,
             selectedAccount = selectedAccount,
             toAccount = toAccount,
+            showArchived=showArchived==true,
             onSelectedAccountChanged = onSelectedAccountChanged,
             onToAccountChanged = onToAccountChanged,
             onAddNewAccount = onAddNewAccount
@@ -227,6 +236,18 @@ fun BoxWithConstraintsScope.EditBottomSheet(
                     internalExpanded = true
                 }
             )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        IvyCheckboxWithText(
+            modifier = Modifier
+                .padding(start = 16.dp)
+                .align(Alignment.Start),
+            text = stringResource(R.string.archived),
+            checked = showArchived == true
+        ) {
+            showArchived = it
         }
 
         Amount(
@@ -298,6 +319,7 @@ fun BoxWithConstraintsScope.EditBottomSheet(
             AccountsRow(
                 accounts = accounts,
                 selectedAccount = selectedAccount,
+                showArchived = showArchived == true,
                 onSelectedAccountChanged = onSelectedAccountChanged,
                 onAddNewAccount = onAddNewAccount,
                 childrenTestTag = "amount_modal_account"
@@ -456,6 +478,7 @@ private fun SheetHeader(
     accounts: List<Account>,
     selectedAccount: Account?,
     toAccount: Account?,
+    showArchived: Boolean,
     onSelectedAccountChanged: (Account) -> Unit,
     onToAccountChanged: (Account) -> Unit,
     onAddNewAccount: () -> Unit,
@@ -494,6 +517,7 @@ private fun SheetHeader(
             AccountsRow(
                 accounts = accounts,
                 selectedAccount = selectedAccount,
+                showArchived = showArchived,
                 onSelectedAccountChanged = onSelectedAccountChanged,
                 onAddNewAccount = onAddNewAccount,
                 childrenTestTag = "from_account"
@@ -516,6 +540,7 @@ private fun SheetHeader(
                 AccountsRow(
                     accounts = accounts,
                     selectedAccount = toAccount,
+                    showArchived = showArchived,
                     onSelectedAccountChanged = onToAccountChanged,
                     onAddNewAccount = onAddNewAccount,
                     childrenTestTag = "to_account",
@@ -530,16 +555,24 @@ private fun SheetHeader(
 private fun AccountsRow(
     accounts: List<Account>,
     selectedAccount: Account?,
+    showArchived: Boolean,
     onSelectedAccountChanged: (Account) -> Unit,
     modifier: Modifier = Modifier,
     childrenTestTag: String? = null,
     onAddNewAccount: () -> Unit,
 ) {
     val lazyState = rememberLazyListState()
+    val filteredAccounts = remember(accounts, showArchived) {
+        if (showArchived) {
+            accounts
+        } else {
+            accounts.filter { !it.archived || it == selectedAccount }
+        }
+    }
 
     LaunchedEffect(accounts, selectedAccount) {
         if (selectedAccount != null) {
-            val selectedIndex = accounts.indexOf(selectedAccount)
+            val selectedIndex = filteredAccounts.indexOf(selectedAccount)
             if (selectedIndex != -1) {
                 launch {
                     if (TestingContext.inTest) return@launch // breaks UI tests
@@ -561,7 +594,7 @@ private fun AccountsRow(
             Spacer(Modifier.width(24.dp))
         }
 
-        itemsIndexed(accounts) { _, account ->
+        itemsIndexed(filteredAccounts) { _, account ->
             Account(
                 account = account,
                 selected = selectedAccount == account,
@@ -592,8 +625,8 @@ private fun Account(
     onClick: () -> Unit
 ) {
     val accountColor = account.color.toComposeColor()
-    val textColor =
-        if (selected) findContrastTextColor(accountColor) else UI.colors.pureInverse
+    val textColor = if(account.archived) UI.colors.pureInverse else
+        if (!selected) UI.colors.pureInverse else findContrastTextColor(accountColor)
 
     val medium = UI.colors.medium
     val rFull = UI.shapes.rFull
@@ -601,11 +634,45 @@ private fun Account(
     Row(
         modifier = Modifier
             .clip(UI.shapes.rFull)
-            .thenIf(!selected) {
+            .thenIf(!selected && !account.archived) {
                 border(2.dp, medium, rFull)
             }
-            .thenIf(selected) {
+            .thenIf(!selected && account.archived) {
+                drawWithContent {
+                    drawContent()
+                    drawRoundRect(
+                        color = medium,
+                        style = Stroke(
+                            width = 2.dp.toPx(),
+                            pathEffect = 
+                                PathEffect.dashPathEffect(
+                                intervals = floatArrayOf(10f, 10f),
+                                phase = 0f
+                            )
+                        ),
+                        cornerRadius = CornerRadius(500f)
+                    )
+                }
+            }
+            .thenIf(selected && !account.archived) {
                 background(accountColor, rFull)
+            }
+            .thenIf(selected && account.archived){
+                drawWithContent {
+                    drawContent()
+                    drawRoundRect(
+                        color = accountColor,
+                        style = Stroke(
+                            width = 4.dp.toPx(),
+                            pathEffect =
+                                PathEffect.dashPathEffect(
+                                    intervals = floatArrayOf(10f, 10f),
+                                    phase = 0f
+                                )
+                        ),
+                        cornerRadius = CornerRadius(500f)
+                    )
+                }
             }
             .clickable(onClick = onClick)
             .testTag(testTag)
@@ -812,7 +879,7 @@ private fun Preview() {
                 },
                 accounts = listOf(
                     acc1,
-                    Account("DSK", color = GreenDark.toArgb()),
+                    Account("DSK", color = GreenDark.toArgb(), archived = true),
                     Account("phyre", color = GreenLight.toArgb()),
                     Account("Revolut", color = IvyDark.toArgb()),
                 ),
@@ -823,7 +890,8 @@ private fun Preview() {
                 onAmountChanged = {},
                 onSelectedAccountChanged = {},
                 onToAccountChanged = {},
-                onAddNewAccount = {}
+                onAddNewAccount = {},
+                showArchivedInitial = true
             )
         }
     }
@@ -834,7 +902,7 @@ private fun Preview() {
 private fun Preview_Transfer() {
     IvyWalletPreview {
         val acc1 = Account("Cash", color = Green.toArgb())
-        val acc2 = Account("DSK", color = GreenDark.toArgb())
+        val acc2 = Account("DSK", color = GreenDark.toArgb(), archived = true)
 
         BoxWithConstraints(
             modifier = Modifier
@@ -862,7 +930,8 @@ private fun Preview_Transfer() {
                 onAmountChanged = {},
                 onSelectedAccountChanged = {},
                 onToAccountChanged = {},
-                onAddNewAccount = {}
+                onAddNewAccount = {},
+                showArchivedInitial = false
             )
         }
     }

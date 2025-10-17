@@ -36,5 +36,8 @@ data class AccountEntity(
     @PrimaryKey
     @SerialName("id")
     @Serializable(with = KSerializerUUID::class)
-    val id: UUID = UUID.randomUUID()
+    val id: UUID = UUID.randomUUID(),
+    
+    @SerialName("archived")
+    val archived: Boolean = false
 )

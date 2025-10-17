@@ -661,7 +661,8 @@ private val testDateTime = LocalDateTime.of(2023, 4, 27, 0, 35)
 @Preview
 @Composable
 private fun BoxWithConstraintsScope.Preview(isDark: Boolean = false) {
-    IvyPreview(isDark) {
+    val theme = if (isDark) Theme.DARK else Theme.LIGHT
+    IvyWalletPreview(theme) {
         UI(
             screen = EditTransactionScreen(null, TransactionType.EXPENSE),
             initialTitle = "",

@@ -400,13 +400,14 @@ fun HomeLazyColumn(
 @Preview
 @Composable
 private fun BoxWithConstraintsScope.PreviewHomeTab(isDark: Boolean = false) {
-    IvyPreview(isDark) {
+    val theme = if (isDark) Theme.DARK else Theme.LIGHT
+    IvyWalletPreview(theme) {
         HomeUi(
             uiState = HomeState(
                 theme = Theme.AUTO,
                 name = "",
                 baseData = AppBaseData(
-                    baseCurrency = "",
+                    baseCurrency = "INR",
                     accounts = persistentListOf(),
                     categories = persistentListOf()
                 ),
@@ -428,7 +429,10 @@ private fun BoxWithConstraintsScope.PreviewHomeTab(isDark: Boolean = false) {
                     stats = IncomeExpensePair.zero(),
                     expanded = false,
                 ),
-                period = TimePeriod(month = Month.monthsList().first(), year = 2023),
+                period = TimePeriod(
+                    month = Month(monthValue = 1, name = "January"),
+                    year = 2023
+                ), // preview - using mock data to avoid context dependency
                 hideBalance = false,
                 hideIncome = false,
                 expanded = false,

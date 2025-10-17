@@ -125,7 +125,7 @@ class OnboardingRouter(
     }
 
     private suspend fun isLogin(): Boolean {
-        isLoginCache = ioThread { accountDao.findAll().isNotEmpty() }
+        isLoginCache = ioThread { accountDao.findAllNonArchived().isNotEmpty() }
         return isLoginCache
     }
 

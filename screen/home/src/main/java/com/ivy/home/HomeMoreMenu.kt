@@ -50,7 +50,9 @@ import com.ivy.base.legacy.Theme
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.utils.thenIf
+import com.ivy.domain.RootScreen
 import com.ivy.legacy.Constants
+import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.ivyWalletCtx
 import com.ivy.legacy.rootScreen
 import com.ivy.legacy.utils.clickableNoIndication
@@ -500,12 +502,15 @@ private fun QuickAccess(
 //            ivyContext.navigateTo(Screen.Charts)
 //        }
 
-            val rootScreen = rootScreen()
-            MoreMenuButton(
-                icon = R.drawable.home_more_menu_share,
-                label = stringResource(R.string.share_ivy)
-            ) {
-                rootScreen.shareIvyWallet()
+            // Check is added for Compose Preview where context is BridgeContext
+            if (context is RootScreen) {
+                val rootScreen = rootScreen()
+                MoreMenuButton(
+                    icon = R.drawable.home_more_menu_share,
+                    label = stringResource(R.string.share_ivy)
+                ) {
+                    rootScreen.shareIvyWallet()
+                }
             }
 
             Spacer(Modifier.weight(1f))
@@ -583,7 +588,7 @@ private fun MoreMenuButton(
 @Preview
 @Composable
 private fun BoxWithConstraintsScope.Preview_Expanded() {
-    IvyPreview {
+    IvyWalletPreview {
         MoreMenu(
             expanded = true,
             balance = 7523.43,
@@ -602,7 +607,7 @@ private fun BoxWithConstraintsScope.Preview_Expanded() {
 @Preview
 @Composable
 private fun BoxWithConstraintsScope.Preview() {
-    IvyPreview {
+    IvyWalletPreview {
         var expanded by remember { mutableStateOf(false) }
 
         MoreMenu(

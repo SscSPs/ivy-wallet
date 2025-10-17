@@ -14,6 +14,10 @@ class FakeAccountDao : AccountDao, WriteAccountDao {
         return accounts.filterValues { it.isDeleted == deleted }.values.toList()
     }
 
+    override suspend fun findAllNonArchived(): List<AccountEntity> {
+        return accounts.filterValues { !it.archived }.values.toList()
+    }
+
     override suspend fun findById(id: UUID): AccountEntity? {
         return accounts[id]
     }

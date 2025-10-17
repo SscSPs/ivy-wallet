@@ -40,7 +40,7 @@ class PlannedPaymentsLogic @Inject constructor(
 
     suspend fun plannedPaymentsAmountFor(range: com.ivy.legacy.data.model.FromToTimeRange): Double {
         val baseCurrency = settingsDao.findFirst().currency
-        val accounts = accountDao.findAll()
+        val accounts = accountDao.findAllNonArchived()
 
         return transactionDao.findAllDueToBetween(
             startDate = range.from(),
@@ -100,7 +100,7 @@ class PlannedPaymentsLogic @Inject constructor(
     }
 
     private suspend fun Iterable<PlannedPaymentRule>.sumByDoubleRecurringForMonthInBaseCurrency(): Double {
-        val accounts = accountDao.findAll()
+        val accounts = accountDao.findAllNonArchived()
         val baseCurrency = settingsDao.findFirst().currency
 
         return sumOf {

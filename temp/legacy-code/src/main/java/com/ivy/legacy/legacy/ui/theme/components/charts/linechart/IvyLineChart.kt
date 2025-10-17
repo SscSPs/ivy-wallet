@@ -685,7 +685,9 @@ private fun Preview_IvyChart() {
                 )
             ),
             xLabel = {
-                Month.monthsList()[it.toInt()].name.first().toString()
+                // preview - using hardcoded month names to avoid context dependency
+                val monthNames = listOf("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
+                monthNames.getOrNull(it.toInt()) ?: ""
             },
             yLabel = {
                 DecimalFormat("#,###").format(it)

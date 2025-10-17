@@ -826,11 +826,12 @@ private fun Item(
 @Preview
 @Composable
 private fun BoxWithConstraintsScope.Preview_empty() {
-    IvyPreview {
+    IvyWalletPreview {
         UI(
-            period = TimePeriod.currentMonth(
-                startDayOfMonth = 1
-            ), // preview
+            period = TimePeriod(
+                month = Month(monthValue = 1, name = "January"),
+                year = 2024
+            ), // preview - using mock data to avoid context dependency
             baseCurrency = "BGN",
             currency = "BGN",
 
@@ -868,11 +869,12 @@ private fun BoxWithConstraintsScope.Preview_empty() {
 @Preview
 @Composable
 private fun BoxWithConstraintsScope.Preview_crypto() {
-    IvyPreview {
+    IvyWalletPreview {
         UI(
-            period = TimePeriod.currentMonth(
-                startDayOfMonth = 1
-            ), // preview
+            period = TimePeriod(
+                month = Month(monthValue = 1, name = "January"),
+                year = 2024
+            ), // preview - using mock data to avoid context dependency
             baseCurrency = "BGN",
             currency = "ADA",
 
@@ -915,9 +917,12 @@ private fun BoxWithConstraintsScope.Preview_crypto() {
 @Preview
 @Composable
 private fun BoxWithConstraintsScope.Preview_empty_upcoming() {
-    IvyPreview {
+    IvyWalletPreview {
         UI(
-            period = TimePeriod(month = Month.monthsList().first(), year = 2023),
+            period = TimePeriod(
+                month = Month(monthValue = 1, name = "January"),
+                year = 2023
+            ), // preview - using mock data to avoid context dependency
             baseCurrency = "BGN",
             currency = "BGN",
 

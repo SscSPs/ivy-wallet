@@ -96,6 +96,7 @@ class BackupDataUseCase @Inject constructor(
 
     suspend fun generateJsonBackup(): String {
         return withContext(dispatchersProvider.io) {
+            // Include archived accounts in backup
             val accounts = async { accountDao.findAll() }
             val budgets = async { budgetDao.findAll() }
             val categories = async { categoryDao.findAll() }
@@ -326,6 +327,7 @@ class BackupDataUseCase @Inject constructor(
         completeData: IvyWalletCompleteData
     ): List<Pair<UUID, UUID>> {
         return withContext(dispatchersProvider.io) {
+            // Include archived accounts when restoring backup
             val existingAccountsList = accountDao.findAll()
             val existingCategoryList = categoryDao.findAll()
 

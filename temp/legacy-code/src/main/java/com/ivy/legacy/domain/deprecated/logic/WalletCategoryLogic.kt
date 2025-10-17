@@ -41,7 +41,7 @@ class WalletCategoryLogic @Inject constructor(
         transactions: List<Transaction> = emptyList()
     ): Double {
         val baseCurrency = settingsDao.findFirst().currency
-        val accounts = accountDao.findAll().map { it.toLegacyDomain() }
+        val accounts = accountDao.findAllNonArchived().map { it.toLegacyDomain() }
 
         return historyByCategory(
             category,

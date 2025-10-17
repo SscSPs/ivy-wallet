@@ -244,7 +244,10 @@ private fun Preview(theme: Theme = Theme.LIGHT) {
     IvyWalletPreview(theme) {
         UI(
             state = BalanceState(
-                period = TimePeriod(month = Month.monthsList().first()),
+                period = TimePeriod(
+                    month = Month(monthValue = 1, name = "January"),
+                    year = 2024
+                ), // preview - using mock data to avoid context dependency
                 baseCurrencyCode = "BGN",
                 currentBalance = 9326.55,
                 balanceAfterPlannedPayments = 8426.0,
