@@ -238,16 +238,18 @@ fun BoxWithConstraintsScope.EditBottomSheet(
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        if (percentExpanded > 0.01f) {
+            Spacer(modifier = Modifier.height(8.dp))
 
-        IvyCheckboxWithText(
-            modifier = Modifier
-                .padding(start = 16.dp)
-                .align(Alignment.Start),
-            text = stringResource(R.string.archived),
-            checked = showArchived == true
-        ) {
-            showArchived = it
+            IvyCheckboxWithText(
+                modifier = Modifier
+                    .padding(start = 16.dp)
+                    .align(Alignment.Start),
+                text = stringResource(R.string.archived),
+                checked = showArchived == true
+            ) {
+                showArchived = it
+            }
         }
 
         Amount(
@@ -644,11 +646,11 @@ private fun Account(
                         color = medium,
                         style = Stroke(
                             width = 2.dp.toPx(),
-                            pathEffect = 
+                            pathEffect =
                                 PathEffect.dashPathEffect(
-                                intervals = floatArrayOf(10f, 10f),
-                                phase = 0f
-                            )
+                                    intervals = floatArrayOf(10f, 10f),
+                                    phase = 0f
+                                )
                         ),
                         cornerRadius = CornerRadius(500f)
                     )
@@ -657,7 +659,7 @@ private fun Account(
             .thenIf(selected && !account.archived) {
                 background(accountColor, rFull)
             }
-            .thenIf(selected && account.archived){
+            .thenIf(selected && account.archived) {
                 drawWithContent {
                     drawContent()
                     drawRoundRect(
@@ -931,7 +933,7 @@ private fun Preview_Transfer() {
                 onSelectedAccountChanged = {},
                 onToAccountChanged = {},
                 onAddNewAccount = {},
-                showArchivedInitial = false
+                showArchivedInitial = false,
             )
         }
     }
