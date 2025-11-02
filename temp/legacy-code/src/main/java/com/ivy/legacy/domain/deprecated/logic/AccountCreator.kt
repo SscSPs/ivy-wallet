@@ -15,6 +15,7 @@ import com.ivy.legacy.utils.ioThread
 import com.ivy.wallet.domain.deprecated.logic.WalletAccountLogic
 import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
 import com.ivy.wallet.domain.pure.util.nextOrderNum
+import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import com.ivy.legacy.datamodel.Account as LegacyAccount
@@ -84,6 +85,28 @@ class AccountCreator @Inject constructor(
                 actualBalance = accountLogic.calculateAccountBalance(updatedLegacyAccount),
                 newBalance = newBalance
             )
+        }
+
+        onRefreshUI()
+    }
+    suspend fun reconAccount(
+        legacyAccount: LegacyAccount,
+        reconDate: Instant,
+        onRefreshUI: suspend () -> Unit
+    ) {
+        ioThread {
+
+            val account = legacyAccount.copy(
+                name = legacyAccount.name,
+                currency = legacyAccount.currency,
+                includeInBalance = legacyAccount.includeInBalance,
+                icon = legacyAccount.icon,
+                color = legacyAccount.color,
+                archived = legacyAccount.archived,
+                reconciliationDate = reconDate,
+            ).toDomainAccount(currencyRepository).getOrNull()
+                ?: return@ioThread
+            accountRepository.save(account)
         }
 
         onRefreshUI()

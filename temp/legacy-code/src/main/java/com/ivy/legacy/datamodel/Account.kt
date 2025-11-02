@@ -11,6 +11,7 @@ import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
 import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.data.repository.CurrencyRepository
+import java.time.Instant
 import java.util.UUID
 import com.ivy.data.model.Account as DomainAccount
 
@@ -24,6 +25,7 @@ data class Account(
     val orderNum: Double = 0.0,
     val includeInBalance: Boolean = true,
     val archived: Boolean = false,
+    val reconciliationDate: Instant? = null,
 
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false,
@@ -40,7 +42,8 @@ data class Account(
         isSynced = isSynced,
         isDeleted = isDeleted,
         id = id,
-        archived = archived
+        archived = archived,
+        reconciliationDate = reconciliationDate
     )
 
     @Suppress("DataClassFunctions")
@@ -57,7 +60,8 @@ data class Account(
                 icon = icon?.let(IconAsset::from)?.getOrNull(),
                 includeInBalance = includeInBalance,
                 orderNum = orderNum,
-                archived = archived
+                archived = archived,
+                reconciliationDate = reconciliationDate,
             )
         }
     }

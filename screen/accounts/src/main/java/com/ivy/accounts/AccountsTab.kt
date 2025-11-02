@@ -73,6 +73,11 @@ import com.ivy.wallet.ui.theme.dynamicContrast
 import com.ivy.wallet.ui.theme.findContrastTextColor
 import com.ivy.wallet.ui.theme.toComposeColor
 import kotlinx.collections.immutable.persistentListOf
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Composable
@@ -412,6 +417,34 @@ private fun AccountHeader(
             )
         }
 
+        account.reconciliationDate?.let { instant ->
+            val date = instant.atZone(ZoneId.systemDefault()).toLocalDate()
+            val now = LocalDate.now()
+
+            val yearsAgo = ChronoUnit.YEARS.between(date, now)
+            val monthsAgo = ChronoUnit.MONTHS.between(date, now)
+            val daysAgo = ChronoUnit.DAYS.between(date, now)
+
+            val formatter = DateTimeFormatter.ofPattern("MMM d") // e.g. "Nov 2"
+            val formattedDate = date.format(formatter)
+
+            val relativeText = when {
+                yearsAgo > 0 -> "Reconciled $yearsAgo year${if (yearsAgo > 1) "s" else ""} ago ($formattedDate)"
+                monthsAgo > 0 -> "Reconciled $monthsAgo month${if (monthsAgo > 1) "s" else ""} ago ($formattedDate)"
+                daysAgo > 7 -> "Reconciled on $formattedDate"
+                daysAgo > 0 -> "Reconciled $daysAgo day${if (daysAgo > 1) "s" else ""} ago"
+                else -> "Reconciled earlier today"
+            }
+
+            Text(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(top = 4.dp),
+                text = relativeText,
+                style = UI.typo.c.style(color = contrastColor)
+            )
+        }
+
         Spacer(Modifier.height(16.dp))
     }
 }
@@ -519,7 +552,8 @@ private fun PreviewAccountsTabCompactModeEnabled(theme: Theme = Theme.LIGHT) {
             icon = null,
             includeInBalance = true,
             orderNum = 0.0,
-            archived = true
+            archived = true,
+            reconciliationDate = Instant.now()
         )
 
         val acc2 = Account(

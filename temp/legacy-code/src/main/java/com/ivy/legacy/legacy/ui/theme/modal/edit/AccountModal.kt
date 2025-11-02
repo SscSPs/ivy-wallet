@@ -294,7 +294,8 @@ private fun save(
                 includeInBalance = includeInBalance,
                 icon = icon,
                 color = color.toArgb(),
-                archived = archived
+                archived = archived,
+                reconciliationDate = account.reconciliationDate,
             ),
             amount
         )

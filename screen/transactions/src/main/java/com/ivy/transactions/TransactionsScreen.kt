@@ -93,6 +93,11 @@ import com.ivy.wallet.ui.theme.wallet.PeriodSelector
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import java.math.BigDecimal
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 @Composable
@@ -178,6 +183,9 @@ fun BoxWithConstraintsScope.TransactionsScreen(screen: TransactionsScreen) {
         onEditAccount = { acc, newBalance ->
             viewModel.onEvent(TransactionsEvent.EditAccount(screen, acc, newBalance))
         },
+        onReconAccount = { acc, newReconDate ->
+            viewModel.onEvent(TransactionsEvent.SetAccountReconcile(screen, acc, newReconDate))
+        },
         onPayOrGet = { transaction ->
             viewModel.onEvent(TransactionsEvent.PayOrGet(screen, transaction))
         },
@@ -238,6 +246,7 @@ private fun BoxWithConstraintsScope.UI(
     onNextMonth: () -> Unit,
     onSetPeriod: (TimePeriod) -> Unit,
     onEditAccount: (Account, Double) -> Unit,
+    onReconAccount: (Account, Instant) -> Unit,
     onEditCategory: (Category) -> Unit,
     onDelete: () -> Unit,
     deleteModal1Visible: Boolean,
@@ -361,6 +370,7 @@ private fun BoxWithConstraintsScope.UI(
                             autoFocusKeyboard = false
                         )
                     },
+                    onReconAccount = onReconAccount,
                     showAccountModal = {
                         accountModalData = AccountModalData(
                             account = account,
@@ -601,6 +611,7 @@ private fun Header(
     onDelete: () -> Unit,
 
     onBalanceClick: () -> Unit,
+    onReconAccount: (Account, Instant) -> Unit,
     showCategoryModal: () -> Unit,
     showAccountModal: () -> Unit,
     treatTransfersAsIncomeExpense: Boolean = false,
@@ -724,7 +735,35 @@ private fun Header(
             )
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(12.dp))
+        
+        if (account != null) {
+            androidx.compose.material3.OutlinedButton(
+                onClick = {
+                    // Update the account's reconciliation date to now
+                    onReconAccount(account, Instant.now())
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp)
+                    .height(40.dp)
+                    .background(itemColor.copy(alpha = 0.1f)),
+            ) {
+                Text(
+                    text = if (account.reconciliationDate == null) {
+                        "Mark as Reconciled"
+                    } else {
+                        "Mark as Reconciled Now"
+                    },
+                    style = UI.typo.b2.copy(
+                        color = contrastColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -763,24 +802,61 @@ private fun Item(
 
                 Spacer(Modifier.width(8.dp))
 
-                Text(
-                    text = account.name,
-                    style = UI.typo.b1.style(
-                        color = contrastColor,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                )
 
-                if (!account.includeInBalance) {
-                    Spacer(Modifier.width(8.dp))
-
-                    Text(
-                        text = stringRes(R.string.excluded),
-                        style = UI.typo.c.style(
-                            color = account.color.toComposeColor().dynamicContrast()
+                Column {
+                    Row {
+                        // Account name
+                        Text(
+                            text = account.name,
+                            style = UI.typo.b1.style(
+                                color = contrastColor,
+                                fontWeight = FontWeight.ExtraBold
+                            )
                         )
-                    )
+
+                        if (!account.includeInBalance) {
+                            Spacer(Modifier.width(8.dp))
+
+                            Text(
+                                text = stringRes(R.string.excluded),
+                                style = UI.typo.c.style(
+                                    color = account.color.toComposeColor().dynamicContrast()
+                                )
+                            )
+                        }
+                    }
+                    account.reconciliationDate?.let { instant ->
+                        val date = instant.atZone(ZoneId.systemDefault()).toLocalDate()
+                        val now = LocalDate.now()
+
+                        val yearsAgo = ChronoUnit.YEARS.between(date, now)
+                        val monthsAgo = ChronoUnit.MONTHS.between(date, now)
+                        val daysAgo = ChronoUnit.DAYS.between(date, now)
+
+                        val formatter = DateTimeFormatter.ofPattern(
+                            if (date.year == now.year) "MMM d" else "MMM d, yyyy"
+                        )
+                        val formattedDate = date.format(formatter)
+
+                        val relativeText = when {
+                            yearsAgo > 0 -> "Reconciled $yearsAgo year${if (yearsAgo > 1) "s" else ""} ago ($formattedDate)"
+                            monthsAgo > 0 -> "Reconciled $monthsAgo month${if (monthsAgo > 1) "s" else ""} ago ($formattedDate)"
+                            daysAgo > 7 -> "Reconciled on $formattedDate"
+                            daysAgo > 0 -> "Reconciled $daysAgo day${if (daysAgo > 1) "s" else ""} ago"
+                            else -> "Reconciled earlier today"
+                        }
+
+                        Text(
+                            text = relativeText,
+                            style = UI.typo.c.style(
+                                color = contrastColor.copy(alpha = 0.7f) // slightly faded secondary tone
+                            ),
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
                 }
+
+
             }
 
             category != null -> {
@@ -851,6 +927,7 @@ private fun BoxWithConstraintsScope.Preview_empty() {
             onNextMonth = {},
             onDelete = {},
             onEditAccount = { _, _ -> },
+            onReconAccount =  { _, _ -> },
             onEditCategory = {},
             updateAccountNameConfirmation = {},
             enableDeletionButton = true,
@@ -892,13 +969,15 @@ private fun BoxWithConstraintsScope.Preview_crypto() {
                 name = "DSK",
                 color = GreenDark.toArgb(),
                 icon = "pet",
-                includeInBalance = false
+                includeInBalance = false,
+                reconciliationDate = Instant.now()
             ),
             onSetPeriod = { },
             onPreviousMonth = {},
             onNextMonth = {},
             onDelete = {},
             onEditAccount = { _, _ -> },
+            onReconAccount =  { _, _ -> },
             onEditCategory = {},
             updateAccountNameConfirmation = {},
             enableDeletionButton = true,
@@ -942,6 +1021,7 @@ private fun BoxWithConstraintsScope.Preview_empty_upcoming() {
             onNextMonth = {},
             onDelete = {},
             onEditAccount = { _, _ -> },
+            onReconAccount =  { _, _ -> },
             onEditCategory = {},
             upcoming = persistentListOf(
                 Transaction(

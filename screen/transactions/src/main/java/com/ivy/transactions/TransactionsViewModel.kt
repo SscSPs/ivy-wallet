@@ -64,6 +64,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import com.ivy.legacy.datamodel.Account as LegacyAccount
@@ -310,6 +311,11 @@ class TransactionsViewModel @Inject constructor(
                 event.screen,
                 event.account,
                 event.newBalance
+            )
+            is TransactionsEvent.SetAccountReconcile -> reconAccount(
+                event.screen,
+                event.account,
+                event.reconDate
             )
 
             is TransactionsEvent.EditCategory -> editCategory(event.updatedCategory)
@@ -775,6 +781,22 @@ class TransactionsViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             accountCreator.editAccount(account, newBalance) {
+                start(
+                    screen = screen,
+                    timePeriod = period.value,
+                    reset = false
+                )
+            }
+        }
+    }
+
+    private fun reconAccount(
+        screen: TransactionsScreen,
+        account: LegacyAccount,
+        reconDate: Instant,
+    ) {
+        viewModelScope.launch {
+            accountCreator.reconAccount(account, reconDate) {
                 start(
                     screen = screen,
                     timePeriod = period.value,

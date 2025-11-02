@@ -13,5 +13,6 @@ fun AccountEntity.toLegacyDomain(): Account = Account(
     isSynced = isSynced,
     isDeleted = isDeleted,
     id = id,
-    archived = archived
+    archived = archived,
+    reconciliationDate = reconciliationDate
 )

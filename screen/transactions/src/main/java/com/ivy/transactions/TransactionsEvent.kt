@@ -6,6 +6,7 @@ import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.datamodel.Account
 import com.ivy.navigation.TransactionsScreen
 import com.ivy.wallet.ui.theme.modal.ChoosePeriodModalData
+import java.time.Instant
 
 sealed interface TransactionsEvent {
     data class SetUpcomingExpanded(val expanded: Boolean) : TransactionsEvent
@@ -24,6 +25,12 @@ sealed interface TransactionsEvent {
         val screen: TransactionsScreen,
         val account: Account,
         val newBalance: Double
+    ) : TransactionsEvent
+
+    data class SetAccountReconcile(
+        val screen: TransactionsScreen,
+        val account: Account,
+        val reconDate: Instant,
     ) : TransactionsEvent
 
     data class PayOrGet(
