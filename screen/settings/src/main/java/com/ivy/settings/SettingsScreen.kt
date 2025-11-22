@@ -113,6 +113,9 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         onSetLockApp = {
             viewModel.onEvent(SettingsEvent.SetLockApp(it))
         },
+        onExportDatabase = {
+            viewModel.onEvent(SettingsEvent.ExportDatabase(rootScreen))
+        },
         onSetShowNotifications = {
             viewModel.onEvent(SettingsEvent.SetShowNotifications(it))
         },
@@ -161,6 +164,7 @@ private fun BoxWithConstraintsScope.UI(
     onBackupData: () -> Unit = {},
     onExportToCSV: () -> Unit = {},
     onSetLockApp: (Boolean) -> Unit = {},
+    onExportDatabase: () -> Unit = {},
     onSetShowNotifications: (Boolean) -> Unit = {},
     onSetTreatTransfersAsIncExp: (Boolean) -> Unit = {},
     onSetHideCurrentBalance: (Boolean) -> Unit = {},
@@ -246,7 +250,15 @@ private fun BoxWithConstraintsScope.UI(
             ExportCSV {
                 onExportToCSV()
             }
+            Spacer(Modifier.height(12.dp))
 
+            SettingsDefaultButton(
+                icon = R.drawable.ic_custom_relationship_l,
+                text = "Export Database",
+                iconPadding = 8.dp
+            ) {
+                onExportDatabase()
+            }
             Spacer(Modifier.height(12.dp))
 
             SettingsDefaultButton(

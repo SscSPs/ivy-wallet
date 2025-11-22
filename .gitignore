@@ -41,6 +41,7 @@ captures/
 
 # IntelliJ
 *.iml
+.idea/*
 .idea/workspace.xml
 .idea/tasks.xml
 .idea/gradle.xml
@@ -104,3 +105,5 @@ node_modules/*
 
 # Kotlin Compiler
 .kotlin/sessions/*
+
+.vscode

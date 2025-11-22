@@ -229,6 +229,7 @@ class SettingsViewModel @Inject constructor(
             )
 
             is SettingsEvent.SetStartDateOfMonth -> setStartDateOfMonth(event.startDate)
+            is SettingsEvent.ExportDatabase -> exportDatabase(event.rootScreen)
 
             SettingsEvent.DeleteCloudUserData -> deleteCloudUserData()
             SettingsEvent.DeleteAllUserData -> deleteAllUserData()
@@ -403,6 +404,43 @@ class SettingsViewModel @Inject constructor(
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             intent.data = Uri.fromParts("package", context.packageName, null)
             context.applicationContext.startActivity(intent)
+        }
+    }
+
+    private fun exportDatabase(rootScreen: RootScreen) {
+        val dbFile = context.getDatabasePath("ivywallet.db")
+        if (!dbFile.exists()) {
+            // Handle case when database file doesn't exist
+            return
+        }
+
+        ivyContext.createNewFile(
+            "IvyWallet_DB_${timeNowUTC().getISOFormattedDateTime()}.db"
+        ) { fileUri ->
+            viewModelScope.launch(Dispatchers.IO) {
+                try {
+                    progressState.value = true
+
+                    context.contentResolver.openOutputStream(fileUri)?.use { outputStream ->
+                        dbFile.inputStream().use { inputStream ->
+                            inputStream.copyTo(outputStream)
+                        }
+                    }
+
+                    progressState.value = false
+
+                    uiThread {
+                        // Use shareZipFile instead of shareFile
+                        rootScreen.shareZipFile(
+                            fileUri = fileUri
+                        )
+                    }
+                } catch (e: Exception) {
+                    progressState.value = false
+                    // Handle error (you might want to show a toast)
+                    e.printStackTrace()
+                }
+            }
         }
     }
 }
