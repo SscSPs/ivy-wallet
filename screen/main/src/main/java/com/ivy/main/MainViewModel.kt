@@ -105,15 +105,8 @@ class MainViewModel @Inject constructor(
             val baseCurrency = currencyRepository.getBaseCurrency()
             _currency.value = baseCurrency.code
 
-            // Sync legacy shared prefs to new repository if needed, or just read from new repo
-            // For now, we assume migration happens or we just read/write to new repo
-            // But we need to ensure dataBackupCompleted is handled.
-            // In the original code:
-            // ivyContext.dataBackupCompleted = sharedPrefs.getBoolean(SharedPrefs.DATA_BACKUP_COMPLETED, false)
-            // We should probably migrate this value to DataStore if it's not there, but for this pilot
-            // let's just keep the side effect of setting it in ivyContext for legacy support
+            // Sync legacy shared prefs to new repository if needed
             val backupCompleted = sharedPrefs.getBoolean(SharedPrefs.DATA_BACKUP_COMPLETED, false)
-            ivyContext.dataBackupCompleted = backupCompleted
             userPreferencesRepository.setDataBackupCompleted(backupCompleted)
 
             ioThread {

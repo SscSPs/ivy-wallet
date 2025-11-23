@@ -19,11 +19,23 @@ import javax.inject.Singleton
 @Singleton
 class IvyWalletCtx @Inject constructor() : IvyContext() {
     // ------------------------------------------ State ---------------------------------------------
-    @Deprecated("Legacy code. Don't use it, please.")
+    @Deprecated(
+        "Migrated to UserPreferencesRepository.startDayOfMonth. Use UserPreferencesRepository instead.",
+        ReplaceWith(
+            "userPreferencesRepository.startDayOfMonth.first()",
+            "com.ivy.data.preferences.UserPreferencesRepository"
+        )
+    )
     var startDayOfMonth = 1
         private set
 
-    @Deprecated("Legacy code. Don't use it, please.")
+    @Deprecated(
+        "Migrated to UserPreferencesRepository.setStartDayOfMonth(). Use UserPreferencesRepository instead.",
+        ReplaceWith(
+            "userPreferencesRepository.setStartDayOfMonth(day)",
+            "com.ivy.data.preferences.UserPreferencesRepository"
+        )
+    )
     fun setStartDayOfMonth(day: Int) {
         startDayOfMonth = day
     }
@@ -36,10 +48,13 @@ class IvyWalletCtx @Inject constructor() : IvyContext() {
     val accountMap: MutableMap<UUID, Account> = mutableMapOf()
     // ---------------------- Optimization  ----------------------------
 
-    @Deprecated("Legacy code. Don't use it, please.")
-    var dataBackupCompleted = false
-
-    @Deprecated("Legacy code. Don't use it, please.")
+    @Deprecated(
+        "Migrated to UserPreferencesRepository. Use UserPreferencesRepository.startDayOfMonth instead.",
+        ReplaceWith(
+            "userPreferencesRepository.startDayOfMonth.first()",
+            "com.ivy.data.preferences.UserPreferencesRepository"
+        )
+    )
     fun initStartDayOfMonthInMemory(sharedPrefs: SharedPrefs): Int {
         startDayOfMonth = sharedPrefs.getInt(SharedPrefs.START_DATE_OF_MONTH, 1)
         return startDayOfMonth
