@@ -117,6 +117,7 @@ class ReportViewModel @Inject constructor(
     private var overdueTransactions by
     mutableStateOf<ImmutableList<LegacyTransaction>>(persistentListOf())
     private var accounts by mutableStateOf<ImmutableList<Account>>(persistentListOf())
+    private var allAccounts by mutableStateOf<ImmutableList<Account>>(persistentListOf())
     private var upcomingExpanded by mutableStateOf(false)
     private var overdueExpanded by mutableStateOf(false)
     private var loading by mutableStateOf(false)
@@ -143,7 +144,7 @@ class ReportViewModel @Inject constructor(
 
         return ReportScreenState(
             categories = categories,
-            accounts = accounts,
+            accounts = allAccounts,
             accountIdFilters = accountIdFilters,
             balance = balance,
             baseCurrency = baseCurrency,
@@ -214,7 +215,9 @@ class ReportViewModel @Inject constructor(
     private fun start() {
         viewModelScope.launch(Dispatchers.IO) {
             baseCurrency = baseCurrencyAct(Unit)
-            accounts = accountsAct(Unit)
+            val fetchedAccounts = accountsAct(Unit)
+            accounts = fetchedAccounts
+            allAccounts = fetchedAccounts
             categories =
                 (listOf(unSpecifiedCategory) + categoryRepository.findAll()).toImmutableList()
             allTags = tagRepository.findAll().toImmutableList()
@@ -224,6 +227,7 @@ class ReportViewModel @Inject constructor(
     private suspend fun setFilter(reportFilter: ReportFilter?) {
         scopedIOThread { scope ->
             if (reportFilter == null) {
+                val fetchedAccounts = accountsAct(Unit)
                 setReportValues(
                     income = 0.00,
                     expense = 0.00,
@@ -232,12 +236,13 @@ class ReportViewModel @Inject constructor(
                     history = persistentListOf(),
                     upcomingTransactions = persistentListOf(),
                     overdueTransactions = persistentListOf(),
-                    accounts = accountsAct(Unit),
+                    accounts = fetchedAccounts,
                     reportFilter = filter,
                     accountIdFilters = persistentListOf(),
                     transactions = persistentListOf(),
                     balanceValue = 0.00
                 )
+                allAccounts = fetchedAccounts
                 return@scopedIOThread
             }
 
@@ -416,39 +421,50 @@ class ReportViewModel @Inject constructor(
         return transactions
             .filter { !excludeableByTagTransactionsIds.contains(it.id) }
             .filter {
-                with(transactionMapper) {
-                    filter.trnTypes.contains(it.getTransactionType())
+                // Filter by Transaction Type (if specified)
+                if (filter.trnTypes.isEmpty()) {
+                    true // No type filter, include all
+                } else {
+                    with(transactionMapper) {
+                        filter.trnTypes.contains(it.getTransactionType())
+                    }
                 }
             }
             .filter {
-                // Filter by Time Period
-
-                filterRange ?: return@filter false
-
-                filterRange.includes(it.time)
+                // Filter by Time Period (if specified)
+                if (filterRange == null) {
+                    true // No period filter, include all
+                } else {
+                    filterRange.includes(it.time)
+                }
             }
             .filter { trn ->
-                // Filter by Accounts
-                when (trn) {
-                    is Transfer -> {
-                        filterAccountIds.contains(trn.fromAccount.value) || // Transfers Out
-                                (filterAccountIds.contains(trn.toAccount.value)) // Transfers In
-                    }
+                // Filter by Accounts (if specified)
+                if (filterAccountIds.isEmpty()) {
+                    true // No account filter, include all
+                } else {
+                    when (trn) {
+                        is Transfer -> {
+                            filterAccountIds.contains(trn.fromAccount.value) || // Transfers Out
+                                    (filterAccountIds.contains(trn.toAccount.value)) // Transfers In
+                        }
 
-                    is Expense -> {
-                        filterAccountIds.contains(trn.account.value)
-                    }
+                        is Expense -> {
+                            filterAccountIds.contains(trn.account.value)
+                        }
 
-                    is Income -> {
-                        filterAccountIds.contains(trn.account.value)
+                        is Income -> {
+                            filterAccountIds.contains(trn.account.value)
+                        }
                     }
                 }
             }
             .filter { trn ->
-                // Filter by Categories
-
-                filterCategoryIds.contains(trn.category) || with(transactionMapper) {
-                    (trn.getTransactionType() == TransactionType.TRANSFER)
+                // Filter by Categories (if specified)
+                if (filterCategoryIds.isEmpty()) {
+                    true // No category filter, include all
+                } else {
+                    filterCategoryIds.contains(trn.category)
                 }
             }
             .filterSuspend {

@@ -229,7 +229,7 @@ private fun BoxWithConstraintsScope.UI(
                 baseData = AppBaseData(
                     baseCurrency = state.baseCurrency,
                     categories = state.categories,
-                    accounts = state.accounts,
+                    accounts = state.accounts, // This now uses allAccounts from the state
                 ),
 
                 upcoming = LegacyDueSection(
@@ -424,7 +424,7 @@ private fun Preview(theme: Theme = Theme.LIGHT) {
             overdueIncome = 2335.12,
             overdueExpenses = 0.0,
             history =
-            persistentListOf(),
+                persistentListOf(),
             upcomingTransactions = persistentListOf(),
             overdueTransactions = persistentListOf(),
 

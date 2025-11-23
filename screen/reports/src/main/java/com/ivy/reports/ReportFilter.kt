@@ -21,7 +21,7 @@ data class ReportFilter(
     val includedTags: List<TagId>,
     val excludedTags: List<TagId>,
 
-) {
+    ) {
     companion object {
         fun emptyFilter(
             baseCurrency: String
@@ -41,19 +41,23 @@ data class ReportFilter(
     }
 
     fun validate(): Boolean {
-        if (trnTypes.isEmpty()) return false
-
-        if (period == null) return false
-
-        if (accounts.isEmpty()) return false
-
-        if (categories.isEmpty()) return false
-
+        // Validate amount range if both min and max are set
         if (minAmount != null && maxAmount != null) {
             if (minAmount > maxAmount) return false
-            if (maxAmount < minAmount) return false
         }
 
-        return true
+        // At least one filter criterion must be specified
+        val hasAtLeastOneFilter = trnTypes.isNotEmpty() ||
+                period != null ||
+                accounts.isNotEmpty() ||
+                categories.isNotEmpty() ||
+                minAmount != null ||
+                maxAmount != null ||
+                includeKeywords.isNotEmpty() ||
+                excludeKeywords.isNotEmpty() ||
+                includedTags.isNotEmpty() ||
+                excludedTags.isNotEmpty()
+
+        return hasAtLeastOneFilter
     }
 }
