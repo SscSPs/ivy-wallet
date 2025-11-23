@@ -31,20 +31,18 @@ import com.ivy.wallet.ui.theme.modal.edit.AccountModalData
 @Composable
 fun BoxWithConstraintsScope.MainScreen(screen: MainScreen) {
     val viewModel: MainViewModel = viewModel()
-
-    val currency by viewModel.currency.observeAsState("")
+    val state = viewModel.uiState()
 
     onScreenStart {
         viewModel.start(screen)
     }
 
-    val ivyContext = ivyWalletCtx()
     UI(
         screen = screen,
-        tab = ivyContext.mainTab,
-        baseCurrency = currency,
-        selectTab = viewModel::selectTab,
-        onCreateAccount = viewModel::createAccount
+        tab = state.currentTab,
+        baseCurrency = state.baseCurrency,
+        selectTab = { viewModel.onEvent(MainScreenEvent.OnTabSelected(it)) },
+        onCreateAccount = { viewModel.onEvent(MainScreenEvent.OnCreateAccount(it)) }
     )
 }
 

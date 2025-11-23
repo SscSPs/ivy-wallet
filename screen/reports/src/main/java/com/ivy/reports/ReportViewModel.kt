@@ -30,6 +30,7 @@ import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.TagRepository
 import com.ivy.data.repository.TransactionRepository
 import com.ivy.data.repository.mapper.TransactionMapper
+import com.ivy.data.preferences.UserPreferencesRepository
 import com.ivy.data.temp.migration.getTransactionType
 import com.ivy.data.temp.migration.getValue
 import com.ivy.domain.RootScreen
@@ -40,10 +41,8 @@ import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.temp.toLegacy
 import com.ivy.legacy.utils.getISOFormattedDateTime
-import com.ivy.legacy.utils.scopedIOThread
 import com.ivy.legacy.utils.timeNowUTC
 import com.ivy.legacy.utils.toLowerCaseLocal
-import com.ivy.legacy.utils.uiThread
 import com.ivy.ui.ComposeViewModel
 import com.ivy.ui.R
 import com.ivy.wallet.domain.action.account.AccountsAct
@@ -66,6 +65,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.math.BigDecimal
@@ -78,7 +78,7 @@ import javax.inject.Inject
 class ReportViewModel @Inject constructor(
     private val plannedPaymentsLogic: PlannedPaymentsLogic,
     private val transactionRepository: TransactionRepository,
-    private val ivyContext: IvyWalletCtx,
+    private val userPreferencesRepository: UserPreferencesRepository,
     private val exchangeAct: ExchangeAct,
     private val accountsAct: AccountsAct,
     private val categoryRepository: CategoryRepository,
@@ -90,7 +90,9 @@ class ReportViewModel @Inject constructor(
     private val exportCsvUseCase: ExportCsvUseCase,
     private val timeProvider: TimeProvider,
     private val timeConverter: TimeConverter,
-    private val features: Features
+    private val features: Features,
+    @Deprecated("Only for createNewFile callback. TODO: Refactor to use proper file picker")
+    private val ivyContext: IvyWalletCtx
 ) : ComposeViewModel<ReportScreenState, ReportScreenEvent>() {
     private val unSpecifiedCategory =
         Category(
@@ -225,7 +227,7 @@ class ReportViewModel @Inject constructor(
     }
 
     private suspend fun setFilter(reportFilter: ReportFilter?) {
-        scopedIOThread { scope ->
+        withContext(Dispatchers.IO) {
             if (reportFilter == null) {
                 val fetchedAccounts = accountsAct(Unit)
                 setReportValues(
@@ -243,10 +245,10 @@ class ReportViewModel @Inject constructor(
                     balanceValue = 0.00
                 )
                 allAccounts = fetchedAccounts
-                return@scopedIOThread
+                return@withContext
             }
 
-            if (!reportFilter.validate()) return@scopedIOThread
+            if (!reportFilter.validate()) return@withContext
             val tempAccounts = reportFilter.accounts
             val baseCurrency = baseCurrency
             loading = true
@@ -260,7 +262,7 @@ class ReportViewModel @Inject constructor(
             val tempHistory = transactionsList
                 .sortedByDescending { it.time }
 
-            val historyWithDateDividers = scope.async {
+            val historyWithDateDividers = viewModelScope.async(Dispatchers.IO) {
                 trnsWithDateDivsAct(
                     TrnsWithDateDivsAct.Input(
                         baseCurrency = baseCurrency,
@@ -285,7 +287,7 @@ class ReportViewModel @Inject constructor(
 
             val tempBalance = calculateBalance(historyIncomeExpense).toDouble()
 
-            val accountFilterIdList = scope.async { reportFilter.accounts.map { it.id } }
+            val accountFilterIdList = viewModelScope.async(Dispatchers.IO) { reportFilter.accounts.map { it.id } }
 
             val timeNowUTC = timeNowUTC()
 
@@ -385,8 +387,9 @@ class ReportViewModel @Inject constructor(
         val filterAccountIds = filter.accounts.map { it.id }
         val filterCategoryIds =
             filter.categories.map { if (it.id.value == unSpecifiedCategory.id.value) null else it.id }
+        val startDayOfMonth = userPreferencesRepository.startDayOfMonth.first()
         val filterRange =
-            filter.period?.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
+            filter.period?.toRange(startDayOfMonth, timeConverter, timeProvider)
 
         val transactions = if (filter.includedTags.isNotEmpty()) {
             tagRepository.findByAllAssociatedIdForTagId(filter.includedTags)
@@ -581,7 +584,7 @@ class ReportViewModel @Inject constructor(
     }
 
     private suspend fun payOrGet(transaction: Transaction) {
-        uiThread {
+        withContext(Dispatchers.Main) {
             plannedPaymentsLogic.payOrGet(
                 transaction = transaction
             ) {
@@ -593,7 +596,7 @@ class ReportViewModel @Inject constructor(
 
     @Deprecated("Uses legacy Transaction")
     private suspend fun payOrGetLegacy(transaction: com.ivy.base.legacy.Transaction) {
-        uiThread {
+        withContext(Dispatchers.Main) {
             plannedPaymentsLogic.payOrGetLegacy(transaction = transaction) {
                 start()
                 setFilter(filter)
@@ -614,7 +617,7 @@ class ReportViewModel @Inject constructor(
     }
 
     private suspend fun skipTransaction(transaction: Transaction) {
-        uiThread {
+        withContext(Dispatchers.Main) {
             plannedPaymentsLogic.payOrGet(
                 transaction = transaction,
                 skipTransaction = true
@@ -627,7 +630,7 @@ class ReportViewModel @Inject constructor(
 
     @Deprecated("Uses legacy Transaction")
     private suspend fun skipTransactionLegacy(transaction: com.ivy.base.legacy.Transaction) {
-        uiThread {
+        withContext(Dispatchers.Main) {
             plannedPaymentsLogic.payOrGetLegacy(
                 transaction = transaction,
                 skipTransaction = true
@@ -639,7 +642,7 @@ class ReportViewModel @Inject constructor(
     }
 
     private suspend fun skipTransactions(transactions: List<Transaction>) {
-        uiThread {
+        withContext(Dispatchers.Main) {
             plannedPaymentsLogic.payOrGet(
                 transactions = transactions,
                 skipTransaction = true
@@ -652,7 +655,7 @@ class ReportViewModel @Inject constructor(
 
     @Deprecated("Uses legacy Transaction")
     private suspend fun skipTransactionsLegacy(transactions: List<com.ivy.base.legacy.Transaction>) {
-        uiThread {
+        withContext(Dispatchers.Main) {
             plannedPaymentsLogic.payOrGetLegacy(
                 transactions = transactions,
                 skipTransaction = true
