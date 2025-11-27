@@ -14,6 +14,7 @@ import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.data.DataObserver
 import com.ivy.data.DataWriteEvent
+import com.ivy.data.preferences.UserPreferencesRepository
 import com.ivy.data.repository.AccountRepository
 import com.ivy.domain.features.Features
 import com.ivy.legacy.IvyWalletCtx
@@ -32,6 +33,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -51,6 +53,7 @@ class AccountsViewModel @Inject constructor(
     private val features: Features,
     private val timeProvider: TimeProvider,
     private val timeConverter: TimeConverter,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : ComposeViewModel<AccountsState, AccountsEvent>() {
     private var baseCurrency by mutableStateOf("")
     private var accountsData by mutableStateOf(listOf<AccountData>())
@@ -166,7 +169,8 @@ class AccountsViewModel @Inject constructor(
     }
 
     private suspend fun startInternally() {
-        val range = ivyContext.selectedPeriod.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
+        val startDayOfMonth = userPreferencesRepository.startDayOfMonth.first()
+        val range = ivyContext.selectedPeriod.toRange(startDayOfMonth, timeConverter, timeProvider)
 
         val baseCurrencyCode = baseCurrencyAct(Unit)
         val accounts = accountRepository.findAll(includeArchived = true).toImmutableList()

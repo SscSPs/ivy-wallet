@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewModelScope
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
+import com.ivy.data.preferences.UserPreferencesRepository
 import com.ivy.ui.ComposeViewModel
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.utils.ioThread
@@ -18,6 +19,7 @@ import com.ivy.wallet.domain.action.settings.BaseCurrencyAct
 import com.ivy.wallet.domain.action.wallet.CalcWalletBalanceAct
 import com.ivy.wallet.domain.deprecated.logic.PlannedPaymentsLogic
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,6 +32,7 @@ class BalanceViewModel @Inject constructor(
     private val calcWalletBalanceAct: CalcWalletBalanceAct,
     private val timeProvider: TimeProvider,
     private val timeConverter: TimeConverter,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : ComposeViewModel<BalanceState, BalanceEvent>() {
 
     private var period by mutableStateOf(ivyContext.selectedPeriod)
@@ -74,8 +77,9 @@ class BalanceViewModel @Inject constructor(
             ).toDouble()
 
             plannedPaymentsAmount = ioThread {
+                val startDayOfMonth = userPreferencesRepository.startDayOfMonth.first()
                 plannedPaymentsLogic.plannedPaymentsAmountFor(
-                    timePeriod.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
+                    timePeriod.toRange(startDayOfMonth, timeConverter, timeProvider)
                     // + positive if Income > Expenses else - negative
                 ) * if (numberOfMonthsAhead >= 0) {
                     numberOfMonthsAhead.toDouble()

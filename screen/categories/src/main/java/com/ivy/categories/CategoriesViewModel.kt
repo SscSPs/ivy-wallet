@@ -10,6 +10,7 @@ import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
+import com.ivy.data.preferences.UserPreferencesRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.domain.features.Features
 import com.ivy.frp.action.thenMap
@@ -34,6 +35,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -51,6 +53,7 @@ class CategoriesViewModel @Inject constructor(
     private val features: Features,
     private val timeProvider: TimeProvider,
     private val timeConverter: TimeConverter,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : ComposeViewModel<CategoriesScreenState, CategoriesScreenEvent>() {
 
     private val baseCurrency = mutableStateOf("")
@@ -137,8 +140,9 @@ class CategoriesViewModel @Inject constructor(
 
     private suspend fun initialise() {
         ioThread {
+            val startDayOfMonth = userPreferencesRepository.startDayOfMonth.first()
             val range = ivyContext.selectedPeriod.toRange(
-                ivyContext.startDayOfMonth,
+                startDayOfMonth,
                 timeConverter,
                 timeProvider
             ) // this must be monthly

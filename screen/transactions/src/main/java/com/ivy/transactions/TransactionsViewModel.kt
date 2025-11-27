@@ -22,6 +22,7 @@ import com.ivy.data.model.CategoryId
 import com.ivy.data.model.primitive.ColorInt
 import com.ivy.data.model.primitive.IconAsset
 import com.ivy.data.model.primitive.NotBlankTrimmedString
+import com.ivy.data.preferences.UserPreferencesRepository
 import com.ivy.data.repository.AccountRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.TagRepository
@@ -63,6 +64,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.UUID
@@ -97,7 +99,8 @@ class TransactionsViewModel @Inject constructor(
     private val tagRepository: TagRepository,
     private val timeProvider: TimeProvider,
     private val timeConverter: TimeConverter,
-    private val features: Features
+    private val features: Features,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : ComposeViewModel<TransactionsState, TransactionsEvent>() {
 
     private val period = mutableStateOf(ivyContext.selectedPeriod)
@@ -312,6 +315,7 @@ class TransactionsViewModel @Inject constructor(
                 event.account,
                 event.newBalance
             )
+
             is TransactionsEvent.SetAccountReconcile -> reconAccount(
                 event.screen,
                 event.account,
@@ -346,7 +350,8 @@ class TransactionsViewModel @Inject constructor(
             accountDao.findById(accountId)?.toLegacyDomain() ?: error("account not found")
         }
         account.value = initialAccount
-        val range = period.value.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
+        val startDayOfMonth = userPreferencesRepository.startDayOfMonth.first()
+        val range = period.value.toRange(startDayOfMonth, timeConverter, timeProvider)
 
         if (initialAccount.currency.isNotNullOrBlank()) {
             currency.value = initialAccount.currency!!
@@ -446,7 +451,8 @@ class TransactionsViewModel @Inject constructor(
             categoryRepository.findById(CategoryId(categoryId)) ?: error("category not found")
         }
         category.value = initialCategory
-        val range = period.value.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
+        val startDayOfMonth = userPreferencesRepository.startDayOfMonth.first()
+        val range = period.value.toRange(startDayOfMonth, timeConverter, timeProvider)
 
         balance.doubleValue = ioThread {
             categoryLogic.calculateCategoryBalance(initialCategory, range, accountFilterSet)
@@ -515,8 +521,9 @@ class TransactionsViewModel @Inject constructor(
                 categoryRepository.findById(CategoryId(categoryId)) ?: error("category not found")
             }
             category.value = initialCategory
+            val startDayOfMonth = userPreferencesRepository.startDayOfMonth.first()
             val range =
-                period.value.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
+                period.value.toRange(startDayOfMonth, timeConverter, timeProvider)
 
             val incomeTrans = transactions.filter {
                 it.categoryId == categoryId && it.type == TransactionType.INCOME
@@ -590,7 +597,8 @@ class TransactionsViewModel @Inject constructor(
     }
 
     private suspend fun initForUnspecifiedCategory() {
-        val range = period.value.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
+        val startDayOfMonth = userPreferencesRepository.startDayOfMonth.first()
+        val range = period.value.toRange(startDayOfMonth, timeConverter, timeProvider)
 
         balance.doubleValue = ioThread {
             categoryLogic.calculateUnspecifiedBalance(range)

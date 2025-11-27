@@ -13,6 +13,7 @@ import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.data.model.primitive.AssetCode
+import com.ivy.data.preferences.UserPreferencesRepository
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.domain.features.Features
@@ -61,6 +62,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import javax.inject.Inject
@@ -92,7 +94,8 @@ class HomeViewModel @Inject constructor(
     private val transactionMapper: TransactionMapper,
     private val timeProvider: TimeProvider,
     private val timeConverter: TimeConverter,
-    private val features: Features
+    private val features: Features,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : ComposeViewModel<HomeState, HomeEvent>() {
     private var currentTheme by mutableStateOf(Theme.AUTO)
     private var name by mutableStateOf("")
@@ -285,7 +288,7 @@ class HomeViewModel @Inject constructor(
         Pair(
             settings,
             period.toRange(
-                startDateOfMonth = ivyContext.startDayOfMonth,
+                startDateOfMonth = userPreferencesRepository.startDayOfMonth.first(),
                 timeConverter = timeConverter,
                 timeProvider = timeProvider
             ).toUTCCloseTimeRange()

@@ -14,6 +14,7 @@ import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.model.Category
+import com.ivy.data.preferences.UserPreferencesRepository
 import com.ivy.legacy.IvyWalletCtx
 import com.ivy.legacy.data.model.TimePeriod
 import com.ivy.legacy.utils.ioThread
@@ -26,6 +27,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -39,6 +41,7 @@ class PieChartStatisticViewModel @Inject constructor(
     private val sharedPrefs: SharedPrefs,
     private val timeProvider: TimeProvider,
     private val timeConverter: TimeConverter,
+    private val userPreferencesRepository: UserPreferencesRepository,
 ) : ComposeViewModel<PieChartStatisticState, PieChartStatisticEvent>() {
 
     private var treatTransfersAsIncomeExpense by mutableStateOf(false)
@@ -193,7 +196,8 @@ class PieChartStatisticViewModel @Inject constructor(
         val accountIdFilterList = accountIdFilterList
         val transactions = transactions
         val baseCurrency = baseCurrency
-        val range = periodValue.toRange(ivyContext.startDayOfMonth, timeConverter, timeProvider)
+        val startDayOfMonth = userPreferencesRepository.startDayOfMonth.first()
+        val range = periodValue.toRange(startDayOfMonth, timeConverter, timeProvider)
 
         val treatTransferAsIncExp =
             sharedPrefs.getBoolean(
