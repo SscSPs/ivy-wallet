@@ -1,6 +1,7 @@
 package com.ivy.settings
 
 import com.ivy.domain.RootScreen
+import com.ivy.data.backup.BackupFrequency
 
 sealed interface SettingsEvent {
     data class SetCurrency(val newCurrency: String) : SettingsEvent
@@ -20,4 +21,7 @@ sealed interface SettingsEvent {
     data object DeleteCloudUserData : SettingsEvent
     data object DeleteAllUserData : SettingsEvent
     data object SwitchLanguage : SettingsEvent
+    data class SetAutoBackupEnabled(val enabled: Boolean) : SettingsEvent
+    data class SetAutoBackupUri(val uri: String) : SettingsEvent
+    data class SetBackupFrequency(val frequency: BackupFrequency) : SettingsEvent
 }

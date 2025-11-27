@@ -18,7 +18,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.Column
+import com.ivy.data.backup.BackupFrequency
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +35,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -98,11 +108,23 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         nameLocalAccount = uiState.name,
         startDateOfMonth = uiState.startDateOfMonth.toInt(),
         languageOptionVisible = uiState.languageOptionVisible,
+        autoBackupEnabled = uiState.autoBackupEnabled,
+        autoBackupUri = uiState.autoBackupUri,
+        backupFrequency = uiState.backupFrequency,
         onSetCurrency = {
             viewModel.onEvent(SettingsEvent.SetCurrency(it))
         },
         onSetName = {
             viewModel.onEvent(SettingsEvent.SetName(it))
+        },
+        onSetAutoBackupEnabled = {
+            viewModel.onEvent(SettingsEvent.SetAutoBackupEnabled(it))
+        },
+        onSetAutoBackupUri = {
+            viewModel.onEvent(SettingsEvent.SetAutoBackupUri(it))
+        },
+        onSetBackupFrequency = {
+            viewModel.onEvent(SettingsEvent.SetBackupFrequency(it))
         },
         onBackupData = {
             viewModel.onEvent(SettingsEvent.BackupData(rootScreen))
@@ -172,7 +194,13 @@ private fun BoxWithConstraintsScope.UI(
     onSetStartDateOfMonth: (Int) -> Unit = {},
     onDeleteAllUserData: () -> Unit = {},
     onDeleteCloudUserData: () -> Unit = {},
-    onSwitchLanguage: () -> Unit = {}
+    onSwitchLanguage: () -> Unit = {},
+    autoBackupEnabled: Boolean = false,
+    autoBackupUri: String? = null,
+    backupFrequency: BackupFrequency = BackupFrequency.Daily,
+    onSetAutoBackupEnabled: (Boolean) -> Unit = {},
+    onSetAutoBackupUri: (String) -> Unit = {},
+    onSetBackupFrequency: (BackupFrequency) -> Unit = {}
 ) {
     var currencyModalVisible by remember { mutableStateOf(false) }
     var nameModalVisible by remember { mutableStateOf(false) }
@@ -282,6 +310,94 @@ private fun BoxWithConstraintsScope.UI(
                     )
                 )
             }
+
+            val launcher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.OpenDocumentTree()
+            ) { uri ->
+                uri?.let {
+                    onSetAutoBackupUri(it.toString())
+                }
+            }
+
+
+            Spacer(Modifier.height(12.dp))
+
+            AppSwitch(
+                lockApp = autoBackupEnabled,
+                onSetLockApp = onSetAutoBackupEnabled,
+                text = "Auto Backup (Daily)",
+                icon = R.drawable.ic_custom_calendar_m
+            )
+
+            if (autoBackupEnabled) {
+                Spacer(Modifier.height(12.dp))
+                SettingsDefaultButton(
+                    icon = R.drawable.ic_vue_security_shield,
+                    text = "Backup Location",
+                    description = if (autoBackupUri != null) "Location set" else "Tap to set location",
+                    iconPadding = 8.dp
+                ) {
+                    launcher.launch(null)
+                }
+
+                // Backup Frequency Selector
+                Spacer(Modifier.height(12.dp))
+
+                var showFrequencyMenu by remember { mutableStateOf(false) }
+
+                SettingsDefaultButton(
+                    icon = R.drawable.ic_custom_calendar_m,
+                    text = "Backup Frequency",
+                    description = when (backupFrequency) {
+                        BackupFrequency.Daily -> "Daily"
+                        BackupFrequency.Every3Days -> "Every 3 days"
+                        BackupFrequency.Weekly -> "Weekly"
+                        BackupFrequency.Every30Days -> "Every 30 days"
+                        is BackupFrequency.MonthlyOnDay -> "Monthly (day ${(backupFrequency as BackupFrequency.MonthlyOnDay).dayOfMonth})"
+                    },
+                    iconPadding = 8.dp
+                ) {
+                    showFrequencyMenu = true
+                }
+
+                DropdownMenu(
+                    expanded = showFrequencyMenu,
+                    onDismissRequest = { showFrequencyMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Daily") },
+                        onClick = {
+                            onSetBackupFrequency(BackupFrequency.Daily)
+                            showFrequencyMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Every 3 days") },
+                        onClick = {
+                            onSetBackupFrequency(BackupFrequency.Every3Days)
+                            showFrequencyMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Weekly") },
+                        onClick = {
+                            onSetBackupFrequency(BackupFrequency.Weekly)
+                            showFrequencyMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Every 30 days") },
+                        onClick = {
+                            onSetBackupFrequency(BackupFrequency.Every30Days)
+                            showFrequencyMenu = false
+                        }
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+
         }
 
         item {

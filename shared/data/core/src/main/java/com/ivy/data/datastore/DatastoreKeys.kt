@@ -22,4 +22,9 @@ object DatastoreKeys {
     fun ivyFeature(key: String): Preferences.Key<Boolean> {
         return booleanPreferencesKey("feature_$key")
     }
+
+    val AUTO_BACKUP_ENABLED = booleanPreferencesKey("auto_backup_enabled")
+    val AUTO_BACKUP_URI = stringPreferencesKey("auto_backup_uri")
+    val AUTO_BACKUP_FREQUENCY = stringPreferencesKey("auto_backup_frequency")
+    val LAST_BACKUP_TIMESTAMP = longPreferencesKey("last_backup_timestamp")
 }

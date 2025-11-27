@@ -169,6 +169,7 @@ dependencies {
     implementation(libs.bundles.hilt)
     implementation(libs.material)
     ksp(libs.hilt.compiler)
+    ksp(libs.androidx.hilt.compiler)
 
     implementation(libs.bundles.room)
     ksp(libs.room.compiler)

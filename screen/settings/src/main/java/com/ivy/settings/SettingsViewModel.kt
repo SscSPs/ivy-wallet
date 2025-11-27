@@ -16,6 +16,8 @@ import com.ivy.base.legacy.SharedPrefs
 import com.ivy.base.legacy.Theme
 import com.ivy.base.legacy.refreshWidget
 import com.ivy.data.backup.BackupDataUseCase
+import com.ivy.data.backup.BackupFrequency
+import com.ivy.data.backup.BackupRepository
 import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.data.db.dao.write.WriteSettingsDao
 import com.ivy.data.model.primitive.AssetCode
@@ -38,6 +40,7 @@ import com.ivy.widget.balance.WalletBalanceWidgetReceiver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -50,6 +53,7 @@ class SettingsViewModel @Inject constructor(
     private val logoutLogic: LogoutLogic,
     private val sharedPrefs: SharedPrefs,
     private val backupDataUseCase: BackupDataUseCase,
+    private val backupRepository: BackupRepository,
     private val startDayOfMonthAct: StartDayOfMonthAct,
     private val updateStartDayOfMonthAct: UpdateStartDayOfMonthAct,
     private val syncExchangeRatesUseCase: SyncExchangeRatesUseCase,
@@ -70,6 +74,9 @@ class SettingsViewModel @Inject constructor(
     private val treatTransfersAsIncomeExpense = mutableStateOf(false)
     private val startDateOfMonth = mutableIntStateOf(1)
     private val progressState = mutableStateOf(false)
+    private val autoBackupEnabled = mutableStateOf(false)
+    private val autoBackupUri = mutableStateOf<String?>(null)
+    private val backupFrequency = mutableStateOf<BackupFrequency>(BackupFrequency.Daily)
 
     @Composable
     override fun uiState(): SettingsState {
@@ -88,7 +95,10 @@ class SettingsViewModel @Inject constructor(
             startDateOfMonth = getStartDateOfMonth(),
             progressState = getProgressState(),
             hideIncome = getHideIncome(),
-            languageOptionVisible = isLanguageOptionVisible()
+            languageOptionVisible = isLanguageOptionVisible(),
+            autoBackupEnabled = getAutoBackupEnabled(),
+            autoBackupUri = getAutoBackupUri(),
+            backupFrequency = getBackupFrequency()
         )
     }
 
@@ -102,6 +112,13 @@ class SettingsViewModel @Inject constructor(
         initializeHideIncome()
         initializeTransfersAsIncomeExpense()
         initializeStartDateOfMonth()
+        initializeAutoBackup()
+    }
+
+    private suspend fun initializeAutoBackup() {
+        autoBackupEnabled.value = backupRepository.isAutoBackupEnabled.first()
+        autoBackupUri.value = backupRepository.autoBackupUri.first()
+        backupFrequency.value = backupRepository.backupFrequency.first()
     }
 
     private suspend fun initializeCurrency() {
@@ -207,6 +224,21 @@ class SettingsViewModel @Inject constructor(
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     }
 
+    @Composable
+    private fun getAutoBackupEnabled(): Boolean {
+        return autoBackupEnabled.value
+    }
+
+    @Composable
+    private fun getAutoBackupUri(): String? {
+        return autoBackupUri.value
+    }
+
+    @Composable
+    private fun getBackupFrequency(): BackupFrequency {
+        return backupFrequency.value
+    }
+
     override fun onEvent(event: SettingsEvent) {
         when (event) {
             is SettingsEvent.SetCurrency -> setCurrency(event.newCurrency)
@@ -234,6 +266,9 @@ class SettingsViewModel @Inject constructor(
             SettingsEvent.DeleteCloudUserData -> deleteCloudUserData()
             SettingsEvent.DeleteAllUserData -> deleteAllUserData()
             SettingsEvent.SwitchLanguage -> switchLanguage()
+            is SettingsEvent.SetAutoBackupEnabled -> setAutoBackupEnabled(event.enabled)
+            is SettingsEvent.SetAutoBackupUri -> setAutoBackupUri(event.uri)
+            is SettingsEvent.SetBackupFrequency -> setBackupFrequency(event.frequency)
         }
     }
 
@@ -441,6 +476,36 @@ class SettingsViewModel @Inject constructor(
                     e.printStackTrace()
                 }
             }
+        }
+    }
+
+    private fun setAutoBackupEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            backupRepository.setAutoBackupEnabled(enabled)
+            autoBackupEnabled.value = enabled
+        }
+    }
+
+    private fun setAutoBackupUri(uri: String) {
+        viewModelScope.launch {
+            backupRepository.setAutoBackupUri(uri)
+            autoBackupUri.value = uri
+
+            // Persist permissions
+            try {
+                val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                context.contentResolver.takePersistableUriPermission(Uri.parse(uri), takeFlags)
+            } catch (e: Exception) {
+                // Handle exception if needed
+            }
+        }
+    }
+
+    private fun setBackupFrequency(frequency: BackupFrequency) {
+        viewModelScope.launch {
+            backupRepository.setBackupFrequency(frequency)
+            backupFrequency.value = frequency
         }
     }
 }
