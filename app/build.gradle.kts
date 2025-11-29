@@ -60,6 +60,24 @@ android {
             resValue("string", "app_name", "Ivy Wallet")
         }
 
+        create("releaseSs") {
+            initWith(getByName("release"))
+            applicationIdSuffix = ".release.sscsps"
+            signingConfig = signingConfigs.getByName("release")
+            resValue("string", "app_name", "Ivy Wallet SS")
+
+            // Ensure proper resource merging
+            matchingFallbacks.add("release")
+
+            // Copy resource configurations from release
+            isMinifyEnabled = getByName("release").isMinifyEnabled
+            isShrinkResources = getByName("release").isShrinkResources
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+
         debug {
             isMinifyEnabled = false
             isShrinkResources = false
