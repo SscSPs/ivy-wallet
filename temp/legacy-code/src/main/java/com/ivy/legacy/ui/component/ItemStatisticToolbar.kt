@@ -27,6 +27,8 @@ fun ItemStatisticToolbar(
     showEditButton: Boolean = true,
     showDeleteButton: Boolean = true,
     onDelete: () -> Unit,
+    showReconcileButton: Boolean = false,
+    onReconcile: () -> Unit = {},
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically
@@ -46,7 +48,19 @@ fun ItemStatisticToolbar(
 
         Spacer(Modifier.weight(1f))
 
+        if (showReconcileButton) {
+            CircleButton(
+                icon = R.drawable.ic_refresh,
+                borderColor = contrastColor,
+                tint = contrastColor,
+                backgroundColor = Transparent
+            ) {
+                onReconcile()
+            }
+        }
+
         if (showEditButton) {
+            Spacer(Modifier.width(16.dp))
             IvyOutlinedButton(
                 iconStart = R.drawable.ic_edit,
                 text = stringRes(R.string.edit),

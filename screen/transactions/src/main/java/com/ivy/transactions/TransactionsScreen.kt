@@ -84,6 +84,7 @@ import com.ivy.wallet.ui.theme.modal.ChoosePeriodModal
 import com.ivy.wallet.ui.theme.modal.ChoosePeriodModalData
 import com.ivy.wallet.ui.theme.modal.DeleteConfirmationModal
 import com.ivy.wallet.ui.theme.modal.DeleteModal
+import com.ivy.wallet.ui.theme.modal.ReconcileConfirmationModal
 import com.ivy.wallet.ui.theme.modal.edit.AccountModal
 import com.ivy.wallet.ui.theme.modal.edit.AccountModalData
 import com.ivy.wallet.ui.theme.modal.edit.CategoryModal
@@ -276,6 +277,7 @@ private fun BoxWithConstraintsScope.UI(
 
     var categoryModalData: CategoryModalData? by remember { mutableStateOf(null) }
     var accountModalData: AccountModalData? by remember { mutableStateOf(null) }
+    var reconcileConfirmationModalVisible: Boolean by remember { mutableStateOf(false) }
 
     val swipeListenerState = rememberSwipeListenerState()
     Column(
@@ -379,7 +381,8 @@ private fun BoxWithConstraintsScope.UI(
                             adjustBalanceMode = false,
                             autoFocusKeyboard = false
                         )
-                    }
+                    },
+                    onReconcileConfirmation = { reconcileConfirmationModalVisible = true }
                 )
             }
 
@@ -483,6 +486,15 @@ private fun BoxWithConstraintsScope.UI(
         }
     ) {
         onSetPeriod(it)
+    }
+
+    ReconcileConfirmationModal(
+        visible = reconcileConfirmationModalVisible,
+        dismiss = { reconcileConfirmationModalVisible = false }
+    ) {
+        if (account != null) {
+            onReconAccount(account, Instant.now())
+        }
     }
 }
 
@@ -609,6 +621,7 @@ private fun Header(
     expenses: Double,
     onEdit: () -> Unit,
     onDelete: () -> Unit,
+    onReconcileConfirmation: () -> Unit,
 
     onBalanceClick: () -> Unit,
     onReconAccount: (Account, Instant) -> Unit,
@@ -635,6 +648,8 @@ private fun Header(
             onDelete = onDelete,
             showEditButton = hideEditAndDeleteButtonForAccountTransfer,
             showDeleteButton = hideEditAndDeleteButtonForAccountTransfer,
+            showReconcileButton = account != null,
+            onReconcile = onReconcileConfirmation
         )
 
         Spacer(Modifier.height(24.dp))
@@ -733,34 +748,6 @@ private fun Header(
                     categoryId = category?.id?.value
                 )
             )
-        }
-
-        Spacer(Modifier.height(12.dp))
-        
-        if (account != null) {
-            androidx.compose.material3.OutlinedButton(
-                onClick = {
-                    // Update the account's reconciliation date to now
-                    onReconAccount(account, Instant.now())
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .height(40.dp)
-                    .background(itemColor.copy(alpha = 0.1f)),
-            ) {
-                Text(
-                    text = if (account.reconciliationDate == null) {
-                        "Mark as Reconciled"
-                    } else {
-                        "Mark as Reconciled Now"
-                    },
-                    style = UI.typo.b2.copy(
-                        color = contrastColor,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
-            }
         }
 
         Spacer(Modifier.height(12.dp))

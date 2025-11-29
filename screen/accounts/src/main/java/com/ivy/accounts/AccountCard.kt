@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -189,37 +190,78 @@ private fun AccountHeader(
                     fontWeight = FontWeight.ExtraBold
                 )
             )
+        }
 
-            if (!account.includeInBalance) {
-                Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.height(4.dp))
 
+        // Bottom row with category/status badges on left and reconciliation text on right
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Left side: Category and status badges
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = stringResource(R.string.excluded),
+                    text = account.accountCategory.name.replace("_", " "),
                     style = UI.typo.c.style(
                         color = account.color.value.toComposeColor().dynamicContrast()
                     )
                 )
+
+                if (!account.includeInBalance) {
+                    Spacer(Modifier.width(8.dp))
+
+                    Text(
+                        text = stringResource(R.string.excluded),
+                        style = UI.typo.c.style(
+                            color = account.color.value.toComposeColor().dynamicContrast()
+                        )
+                    )
+                }
+
+                if (account.archived) {
+                    Spacer(Modifier.width(8.dp))
+
+                    Text(
+                        text = stringResource(R.string.archived),
+                        style = UI.typo.c.style(
+                            color = account.color.value.toComposeColor().dynamicContrast()
+                        )
+                    )
+                }
             }
 
-            if (account.archived) {
-                Spacer(Modifier.width(8.dp))
+            // Right side: Reconciliation date
+            account.reconciliationDate?.let { instant ->
+                val date = instant.atZone(ZoneId.systemDefault()).toLocalDate()
+                val now = LocalDate.now()
+
+                val yearsAgo = ChronoUnit.YEARS.between(date, now)
+                val monthsAgo = ChronoUnit.MONTHS.between(date, now)
+                val daysAgo = ChronoUnit.DAYS.between(date, now)
+
+                val formatter = DateTimeFormatter.ofPattern("MMM d") // e.g. "Nov 2"
+                val formattedDate = date.format(formatter)
+
+                val relativeText = when {
+                    yearsAgo > 0 -> "${yearsAgo}y${if (yearsAgo > 1) "" else ""} ago"
+                    monthsAgo > 0 -> "${monthsAgo}m${if (monthsAgo > 1) "" else ""} ago"
+                    daysAgo > 7 -> formattedDate
+                    daysAgo > 1 -> "${daysAgo}d ago"
+                    daysAgo == 1L -> "1d ago"
+                    else -> "Today"
+                }
 
                 Text(
-                    text = stringResource(R.string.archived),
-                    style = UI.typo.c.style(
-                        color = account.color.value.toComposeColor().dynamicContrast()
-                    )
+                    text = relativeText,
+                    style = UI.typo.c.style(color = account.color.value.toComposeColor().dynamicContrast())
                 )
             }
-
-            // Display account category
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = account.accountCategory.name.replace("_", " "),
-                style = UI.typo.c.style(
-                    color = account.color.value.toComposeColor().dynamicContrast()
-                )
-            )
         }
 
         Spacer(Modifier.height(4.dp))
@@ -252,34 +294,6 @@ private fun AccountHeader(
                 currency = baseCurrency,
                 balance = accountData.balanceBaseCurrency!!,
                 currencyUpfront = false
-            )
-        }
-
-        account.reconciliationDate?.let { instant ->
-            val date = instant.atZone(ZoneId.systemDefault()).toLocalDate()
-            val now = LocalDate.now()
-
-            val yearsAgo = ChronoUnit.YEARS.between(date, now)
-            val monthsAgo = ChronoUnit.MONTHS.between(date, now)
-            val daysAgo = ChronoUnit.DAYS.between(date, now)
-
-            val formatter = DateTimeFormatter.ofPattern("MMM d") // e.g. "Nov 2"
-            val formattedDate = date.format(formatter)
-
-            val relativeText = when {
-                yearsAgo > 0 -> "Reconciled $yearsAgo year${if (yearsAgo > 1) "s" else ""} ago ($formattedDate)"
-                monthsAgo > 0 -> "Reconciled $monthsAgo month${if (monthsAgo > 1) "s" else ""} ago ($formattedDate)"
-                daysAgo > 7 -> "Reconciled on $formattedDate"
-                daysAgo > 0 -> "Reconciled $daysAgo day${if (daysAgo > 1) "s" else ""} ago"
-                else -> "Reconciled earlier today"
-            }
-
-            Text(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(top = 4.dp),
-                text = relativeText,
-                style = UI.typo.c.style(color = account.color.value.toComposeColor().dynamicContrast())
             )
         }
 
@@ -369,6 +383,42 @@ private fun PreviewAccountCardArchived(theme: Theme = Theme.LIGHT) {
             includeInBalance = true,
             orderNum = 0.0,
             archived = true,
+            accountCategory = AccountCategory.EXPENSE
+        )
+
+        val accountData = AccountData(
+            account = account,
+            balance = 1234.56,
+            balanceBaseCurrency = null,
+            monthlyExpenses = 500.0,
+            monthlyIncome = 2000.0
+        )
+
+        AccountCard(
+            baseCurrency = "USD",
+            accountData = accountData,
+            compactModeEnabled = false,
+            onBalanceClick = {},
+            onClick = {}
+        )
+    }
+}
+
+
+@Preview
+@Composable
+private fun PreviewAccountCardArchivedExcludedAndReconed(theme: Theme = Theme.LIGHT) {
+    IvyWalletPreview(theme = theme) {
+        val account = Account(
+            id = AccountId(UUID.randomUUID()),
+            name = NotBlankTrimmedString.unsafe("Test Account"),
+            color = ColorInt(Green.toArgb()),
+            asset = AssetCode.unsafe("USD"),
+            icon = null,
+            includeInBalance = false,
+            orderNum = 0.0,
+            archived = true,
+            reconciliationDate = Instant.now(),
             accountCategory = AccountCategory.EXPENSE
         )
 
