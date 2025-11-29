@@ -107,6 +107,11 @@ data object ReportScreen : Screen {
         get() = true
 }
 
+data object ViewsScreen : Screen {
+    override val isLegacy: Boolean
+        get() = true
+}
+
 data object BudgetScreen : Screen {
     override val isLegacy: Boolean
         get() = true

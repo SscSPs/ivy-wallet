@@ -74,6 +74,7 @@ import com.ivy.navigation.PlannedPaymentsScreen
 import com.ivy.navigation.ReportScreen
 import com.ivy.navigation.SearchScreen
 import com.ivy.navigation.SettingsScreen
+import com.ivy.navigation.ViewsScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
 import com.ivy.wallet.ui.theme.Blue
@@ -511,6 +512,15 @@ private fun QuickAccess(
                 ) {
                     rootScreen.shareIvyWallet()
                 }
+
+            }
+                Spacer(Modifier.weight(1f))
+
+            MoreMenuButton(
+                icon = R.drawable.home_more_menu_reports,
+                label = "Views"
+            ) {
+                nav.navigateTo(ViewsScreen)
             }
 
             Spacer(Modifier.weight(1f))

@@ -37,6 +37,8 @@ import com.ivy.navigation.PieChartStatisticScreen
 import com.ivy.navigation.PlannedPaymentsScreen
 import com.ivy.navigation.ReleasesScreen
 import com.ivy.navigation.ReportScreen
+import com.ivy.navigation.ViewsScreen
+import com.ivy.views.ViewsScreen as ViewsScreenImpl
 import com.ivy.navigation.Screen
 import com.ivy.navigation.SearchScreen
 import com.ivy.navigation.SettingsScreen
@@ -75,6 +77,7 @@ fun BoxWithConstraintsScope.IvyNavGraph(screen: Screen?) {
         is BalanceScreen -> BalanceScreen(screen = screen)
         is ImportScreen -> ImportCSVScreen(screen = screen)
         is ReportScreen -> ReportScreen(screen = screen)
+        is ViewsScreen -> ViewsScreenImpl()
         is BudgetScreen -> BudgetScreen(screen = screen)
         is LoansScreen -> LoansScreen(screen = screen)
         is LoanDetailsScreen -> LoanDetailsScreen(screen = screen)
