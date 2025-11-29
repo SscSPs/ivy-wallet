@@ -5,6 +5,7 @@ import arrow.core.Either
 import arrow.core.raise.either
 import com.ivy.data.db.entity.AccountEntity
 import com.ivy.data.model.Account
+import com.ivy.data.model.AccountCategory
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.ColorInt
@@ -26,6 +27,7 @@ data class Account(
     val includeInBalance: Boolean = true,
     val archived: Boolean = false,
     val reconciliationDate: Instant? = null,
+    val accountCategory: AccountCategory = AccountCategory.ASSET,
 
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false,
@@ -43,7 +45,8 @@ data class Account(
         isDeleted = isDeleted,
         id = id,
         archived = archived,
-        reconciliationDate = reconciliationDate
+        reconciliationDate = reconciliationDate,
+        accountCategory = accountCategory
     )
 
     @Suppress("DataClassFunctions")
@@ -62,6 +65,7 @@ data class Account(
                 orderNum = orderNum,
                 archived = archived,
                 reconciliationDate = reconciliationDate,
+                accountCategory = accountCategory
             )
         }
     }

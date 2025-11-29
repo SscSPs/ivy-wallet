@@ -53,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.ivy.base.legacy.Theme
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.data.model.Account
+import com.ivy.data.model.AccountCategory
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.ColorInt
@@ -210,6 +211,15 @@ private fun AccountHeader(
                     )
                 )
             }
+
+            // Display account category
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = account.accountCategory.name.replace("_", " "),
+                style = UI.typo.c.style(
+                    color = account.color.value.toComposeColor().dynamicContrast()
+                )
+            )
         }
 
         Spacer(Modifier.height(4.dp))
@@ -290,7 +300,8 @@ private fun PreviewAccountCard(theme: Theme = Theme.LIGHT) {
             includeInBalance = true,
             orderNum = 0.0,
             archived = false,
-            reconciliationDate = Instant.now()
+            reconciliationDate = Instant.now(),
+            accountCategory = AccountCategory.ASSET
         )
 
         val accountData = AccountData(
@@ -323,7 +334,8 @@ private fun PreviewAccountCard2(theme: Theme = Theme.LIGHT) {
             icon = null,
             includeInBalance = true,
             orderNum = 0.0,
-            archived = false
+            archived = false,
+            accountCategory = AccountCategory.LIABILITY
         )
 
         val accountData = AccountData(
@@ -356,7 +368,8 @@ private fun PreviewAccountCardArchived(theme: Theme = Theme.LIGHT) {
             icon = null,
             includeInBalance = true,
             orderNum = 0.0,
-            archived = true
+            archived = true,
+            accountCategory = AccountCategory.EXPENSE
         )
 
         val accountData = AccountData(

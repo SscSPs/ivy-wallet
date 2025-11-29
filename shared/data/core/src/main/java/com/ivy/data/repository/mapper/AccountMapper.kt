@@ -29,7 +29,8 @@ class AccountMapper @Inject constructor(
             includeInBalance = includeInBalance,
             orderNum = orderNum,
             archived = archived,
-            reconciliationDate = reconciliationDate
+            reconciliationDate = reconciliationDate,
+            accountCategory = accountCategory
         )
     }
 
@@ -44,7 +45,8 @@ class AccountMapper @Inject constructor(
             id = id.value,
             isSynced = true, // TODO: Delete this
             archived = archived,
-            reconciliationDate = reconciliationDate
+            reconciliationDate = reconciliationDate,
+            accountCategory = accountCategory
         )
     }
 }

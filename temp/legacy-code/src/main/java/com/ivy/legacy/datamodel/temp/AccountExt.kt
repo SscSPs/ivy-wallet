@@ -1,6 +1,7 @@
 package com.ivy.legacy.datamodel.temp
 
 import com.ivy.data.db.entity.AccountEntity
+import com.ivy.data.model.AccountCategory
 import com.ivy.legacy.datamodel.Account
 
 fun AccountEntity.toLegacyDomain(): Account = Account(
@@ -14,5 +15,6 @@ fun AccountEntity.toLegacyDomain(): Account = Account(
     isDeleted = isDeleted,
     id = id,
     archived = archived,
-    reconciliationDate = reconciliationDate
+    reconciliationDate = reconciliationDate,
+    accountCategory = accountCategory ?: AccountCategory.ASSET
 )

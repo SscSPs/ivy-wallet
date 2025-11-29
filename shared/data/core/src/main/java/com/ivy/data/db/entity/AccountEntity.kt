@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.ivy.base.kotlinxserilzation.KSerializerInstant
 import com.ivy.base.kotlinxserilzation.KSerializerUUID
+import com.ivy.data.model.AccountCategory
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.time.Instant
@@ -45,5 +46,8 @@ data class AccountEntity(
 
     @SerialName("reconciliationDate")
     @Serializable(with = KSerializerInstant::class)
-    val reconciliationDate: Instant? = null
+    val reconciliationDate: Instant? = null,
+
+    @SerialName("accountCategory")
+    val accountCategory: AccountCategory = AccountCategory.ASSET
 )

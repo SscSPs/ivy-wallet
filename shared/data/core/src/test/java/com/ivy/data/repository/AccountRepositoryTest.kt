@@ -7,6 +7,7 @@ import com.ivy.data.db.dao.read.AccountDao
 import com.ivy.data.db.dao.write.WriteAccountDao
 import com.ivy.data.db.entity.AccountEntity
 import com.ivy.data.model.Account
+import com.ivy.data.model.AccountCategory
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.model.primitive.ColorInt
@@ -75,7 +76,10 @@ class AccountRepositoryTest {
             includeInBalance = true,
             isSynced = true,
             isDeleted = false,
-            id = accountId.value
+            id = accountId.value,
+            archived = false,
+            reconciliationDate = null,
+            accountCategory = AccountCategory.ASSET
         )
 
         // when
@@ -90,6 +94,7 @@ class AccountRepositoryTest {
             icon = null,
             includeInBalance = true,
             orderNum = 1.0,
+            accountCategory = AccountCategory.ASSET,
         )
     }
 
@@ -106,7 +111,10 @@ class AccountRepositoryTest {
             includeInBalance = true,
             isSynced = true,
             isDeleted = false,
-            id = accountId.value
+            id = accountId.value,
+            archived = false,
+            reconciliationDate = null,
+            accountCategory = AccountCategory.ASSET
         )
 
         // when
@@ -143,7 +151,10 @@ class AccountRepositoryTest {
                 includeInBalance = true,
                 isSynced = true,
                 isDeleted = false,
-                id = account1Id.value
+                id = account1Id.value,
+                archived = false,
+                reconciliationDate = null,
+                accountCategory = AccountCategory.ASSET
             ),
             AccountEntity(
                 name = "Cash",
@@ -154,7 +165,10 @@ class AccountRepositoryTest {
                 includeInBalance = true,
                 isSynced = true,
                 isDeleted = false,
-                id = account2Id.value
+                id = account2Id.value,
+                archived = false,
+                reconciliationDate = null,
+                accountCategory = AccountCategory.ASSET
             )
         )
 
@@ -171,7 +185,8 @@ class AccountRepositoryTest {
                 icon = null,
                 includeInBalance = true,
                 orderNum = 1.0,
-            ),
+            accountCategory = AccountCategory.ASSET,
+        ),
             Account(
                 id = account2Id,
                 name = NotBlankTrimmedString.unsafe("Cash"),
@@ -180,6 +195,7 @@ class AccountRepositoryTest {
                 icon = null,
                 includeInBalance = true,
                 orderNum = 2.0,
+                accountCategory = AccountCategory.ASSET,
             )
         )
     }
@@ -199,7 +215,10 @@ class AccountRepositoryTest {
                 includeInBalance = true,
                 isSynced = true,
                 isDeleted = false,
-                id = account1Id.value
+                id = account1Id.value,
+                archived = false,
+                reconciliationDate = null,
+                accountCategory = AccountCategory.ASSET
             ),
             AccountEntity(
                 name = "  ",
@@ -210,7 +229,10 @@ class AccountRepositoryTest {
                 includeInBalance = true,
                 isSynced = true,
                 isDeleted = false,
-                id = account2Id.value
+                id = account2Id.value,
+                archived = false,
+                reconciliationDate = null,
+                accountCategory = AccountCategory.ASSET
             )
         )
 
@@ -227,7 +249,8 @@ class AccountRepositoryTest {
                 icon = null,
                 includeInBalance = true,
                 orderNum = 1.0,
-            )
+            accountCategory = AccountCategory.ASSET,
+        )
         )
     }
 
@@ -268,6 +291,7 @@ class AccountRepositoryTest {
             icon = null,
             includeInBalance = true,
             orderNum = 1.0,
+            accountCategory = AccountCategory.ASSET,
         )
 
         // when
@@ -285,7 +309,10 @@ class AccountRepositoryTest {
                     includeInBalance = true,
                     isSynced = true,
                     isDeleted = false,
-                    id = accountId.value
+                    id = accountId.value,
+                    archived = false,
+                    reconciliationDate = null,
+                    accountCategory = AccountCategory.ASSET
                 )
             )
         }
@@ -306,7 +333,8 @@ class AccountRepositoryTest {
                 icon = null,
                 includeInBalance = true,
                 orderNum = 1.0,
-            ),
+            accountCategory = AccountCategory.ASSET,
+        ),
             Account(
                 id = account2Id,
                 name = NotBlankTrimmedString.unsafe("Cash"),
@@ -315,6 +343,7 @@ class AccountRepositoryTest {
                 icon = null,
                 includeInBalance = true,
                 orderNum = 2.0,
+                accountCategory = AccountCategory.ASSET,
             )
         )
 
@@ -334,7 +363,10 @@ class AccountRepositoryTest {
                         includeInBalance = true,
                         isSynced = true,
                         isDeleted = false,
-                        id = account1Id.value
+                        id = account1Id.value,
+                        archived = false,
+                        reconciliationDate = null,
+                        accountCategory = AccountCategory.ASSET
                     ),
                     AccountEntity(
                         name = "Cash",
@@ -345,7 +377,10 @@ class AccountRepositoryTest {
                         includeInBalance = true,
                         isSynced = true,
                         isDeleted = false,
-                        id = account2Id.value
+                        id = account2Id.value,
+                        archived = false,
+                        reconciliationDate = null,
+                        accountCategory = AccountCategory.ASSET
                     )
                 )
             )

@@ -1,10 +1,13 @@
 package com.ivy.wallet.ui.theme.modal.edit
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -42,12 +45,14 @@ import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
 import com.ivy.wallet.ui.theme.Gray
 import com.ivy.wallet.ui.theme.Ivy
 import com.ivy.wallet.ui.theme.components.IvyCheckboxWithText
+import com.ivy.wallet.ui.theme.modal.AccountCategoryModal
 import com.ivy.wallet.ui.theme.modal.ChooseIconModal
 import com.ivy.wallet.ui.theme.modal.CurrencyModal
 import com.ivy.wallet.ui.theme.modal.IvyModal
 import com.ivy.wallet.ui.theme.modal.ModalAddSave
 import com.ivy.wallet.ui.theme.modal.ModalAmountSection
 import com.ivy.wallet.ui.theme.modal.ModalTitle
+import com.ivy.data.model.AccountCategory
 import java.util.UUID
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
@@ -91,9 +96,13 @@ fun BoxWithConstraintsScope.AccountModal(
     var archived by remember(modal) {
         mutableStateOf(account?.archived ?: false)
     }
+    var accountCategory by remember(modal) {
+        mutableStateOf(account?.accountCategory ?: AccountCategory.ASSET)
+    }
 
     var amountModalVisible by remember { mutableStateOf(false) }
     var currencyModalVisible by remember { mutableStateOf(false) }
+    var categoryModalVisible by remember { mutableStateOf(false) }
     var chooseIconModalVisible by remember(modal) {
         mutableStateOf(false)
     }
@@ -119,6 +128,7 @@ fun BoxWithConstraintsScope.AccountModal(
                     amount = amount,
                     includeInBalance = includeInBalance,
                     archived = archived,
+                    accountCategory = accountCategory,
 
                     onCreateAccount = onCreateAccount,
                     onEditAccount = onEditAccount,
@@ -183,6 +193,12 @@ fun BoxWithConstraintsScope.AccountModal(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                AccountCategory(
+                    accountCategory = accountCategory
+                ) {
+                    categoryModalVisible = true
+                }
+
                 IvyCheckboxWithText(
                     modifier = Modifier
                         .padding(start = 16.dp)
@@ -238,6 +254,7 @@ fun BoxWithConstraintsScope.AccountModal(
                 amount = newAmount,
                 includeInBalance = includeInBalance,
                 archived = archived,
+                accountCategory = accountCategory,
 
                 onCreateAccount = onCreateAccount,
                 onEditAccount = onEditAccount,
@@ -262,6 +279,15 @@ fun BoxWithConstraintsScope.AccountModal(
 //        }
     }
 
+    AccountCategoryModal(
+        title = "Choose Account Category",
+        initialCategory = accountCategory,
+        visible = categoryModalVisible,
+        dismiss = { categoryModalVisible = false }
+    ) {
+        accountCategory = it
+    }
+
     ChooseIconModal(
         visible = chooseIconModalVisible,
         initialIcon = icon ?: "account",
@@ -281,6 +307,7 @@ private fun save(
     amount: Double,
     includeInBalance: Boolean,
     archived: Boolean,
+    accountCategory: AccountCategory,
 
     onCreateAccount: (CreateAccountData) -> Unit,
     onEditAccount: (Account, balance: Double) -> Unit,
@@ -296,6 +323,7 @@ private fun save(
                 color = color.toArgb(),
                 archived = archived,
                 reconciliationDate = account.reconciliationDate,
+                accountCategory = accountCategory
             ),
             amount
         )
@@ -308,7 +336,8 @@ private fun save(
                 icon = icon,
                 balance = amount,
                 includeBalance = includeInBalance,
-                archived = archived
+                archived = archived,
+                accountCategory = accountCategory
             )
         )
     }
@@ -348,6 +377,47 @@ private fun AccountCurrency(
         val currencyName = IvyCurrency.fromCode(currencyCode)?.name ?: ""
         Text(
             text = "-$currencyName".toLowerCaseLocal(),
+            style = UI.typo.b2.style(
+                fontWeight = FontWeight.SemiBold,
+                color = Gray
+            )
+        )
+
+        Spacer(Modifier.width(24.dp))
+    }
+}
+
+@Composable
+private fun AccountCategory(
+    accountCategory: AccountCategory,
+
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .background(UI.colors.medium, UI.shapes.r4)
+            .clip(UI.shapes.r4)
+            .clickable {
+                onClick()
+            }
+            .padding(vertical = 24.dp)
+            .testTag("account_modal_category"),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(Modifier.width(32.dp))
+
+        Text(
+            text = accountCategory.name.replace("_", " "),
+            style = UI.typo.b1.style(
+                fontWeight = FontWeight.ExtraBold
+            )
+        )
+
+        Spacer(Modifier.weight(1f))
+
+        Text(
+            text = "Account Category",
             style = UI.typo.b2.style(
                 fontWeight = FontWeight.SemiBold,
                 color = Gray

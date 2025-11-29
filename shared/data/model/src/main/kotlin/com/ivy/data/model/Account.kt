@@ -22,4 +22,5 @@ data class Account(
     override val orderNum: Double,
     val archived: Boolean = false,
     val reconciliationDate: Instant? = null,
+    val accountCategory: AccountCategory = AccountCategory.ASSET,
 ) : Identifiable<AccountId>, Reorderable

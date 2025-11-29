@@ -46,6 +46,7 @@ import com.ivy.data.db.migration.Migration128to129_DeleteIsDeleted
 import com.ivy.data.db.migration.Migration129to130_LoanIncludeNote
 import com.ivy.data.db.migration.Migration130to131_AccountArchived
 import com.ivy.data.db.migration.Migration131to132_AccountRecon
+import com.ivy.data.db.migration.Migration132to133_AccountCategory
 import com.ivy.domain.db.RoomTypeConverters
 import com.ivy.domain.db.migration.Migration105to106_TrnRecurringRules
 import com.ivy.domain.db.migration.Migration106to107_Wishlist
@@ -80,7 +81,7 @@ import com.ivy.domain.db.migration.Migration125to126_Tags
             spec = IvyRoomDatabase.DeleteSEMigration::class
         )
     ],
-    version = 132,
+    version = 133,
     exportSchema = true
 )
 @TypeConverters(RoomTypeConverters::class)
@@ -140,6 +141,7 @@ abstract class IvyRoomDatabase : RoomDatabase() {
             Migration129to130_LoanIncludeNote(),
             Migration130to131_AccountArchived(),
             Migration131to132_AccountRecon(),
+            Migration132to133_AccountCategory(),
         )
 
         @Suppress("SpreadOperator")
