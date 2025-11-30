@@ -10,6 +10,8 @@ data class ViewsState(
     val accountsData: ImmutableList<AccountData>,
     val groupedAccounts: ImmutableList<AccountGroup>,
     val hideTotalBalance: Boolean,
+    val includeExcluded: Boolean,
+    val includeArchived: Boolean,
 )
 
 @Immutable
@@ -17,10 +19,13 @@ data class AccountGroup(
     val category: String,
     val accounts: ImmutableList<AccountData>,
     val currencyTotals: ImmutableList<CurrencyTotal>,
+    val baseCurrencyTotal: Double, // Total converted to base currency
 )
 
 @Immutable
 data class CurrencyTotal(
     val currency: String,
-    val totalBalance: Double,
+    val originalBalance: Double,
+    val baseCurrencyBalance: Double, // Converted amount
+    val exchangeRate: Double?, // Exchange rate used (null if same as base)
 )

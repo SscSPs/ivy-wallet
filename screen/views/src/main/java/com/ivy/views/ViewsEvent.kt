@@ -1,5 +1,7 @@
 package com.ivy.views
 
 sealed interface ViewsEvent {
-    data object LoadData : ViewsEvent
+    object LoadData : ViewsEvent
+    object ToggleExcluded : ViewsEvent
+    object ToggleArchived : ViewsEvent
 }

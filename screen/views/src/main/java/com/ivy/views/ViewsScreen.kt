@@ -1,6 +1,9 @@
 package com.ivy.views
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,16 +12,21 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -37,6 +45,18 @@ import com.ivy.wallet.ui.theme.modal.AddModalBackHandling
 import java.util.UUID
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 
+// Category color mapping
+private fun getCategoryColor(category: String): Color {
+    return when (category.uppercase()) {
+        "ASSET" -> Color(0xFF4CAF50) // Green
+        "EXPENSE" -> Color(0xFFFF9800) // Orange  
+        "LIABILITY" -> Color(0xFFF44336) // Red
+        "INCOME" -> Color(0xFF2196F3) // Blue
+        "SAVINGS" -> Color(0xFF9C27B0) // Purple
+        else -> Color(0xFF607D8B) // Blue Grey default
+    }
+}
+
 @Composable
 fun BoxWithConstraintsScope.ViewsScreen() {
     val viewModel: ViewsViewModel = screenScopedViewModel()
@@ -53,6 +73,14 @@ fun BoxWithConstraintsScope.ViewsScreen() {
     ) {
         Toolbar()
 
+        // Filter Toggles
+        FilterTogglesSection(
+            includeExcluded = state.includeExcluded,
+            includeArchived = state.includeArchived,
+            onToggleExcluded = { viewModel.onEvent(ViewsEvent.ToggleExcluded) },
+            onToggleArchived = { viewModel.onEvent(ViewsEvent.ToggleArchived) }
+        )
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -63,7 +91,7 @@ fun BoxWithConstraintsScope.ViewsScreen() {
                     state = state,
                     category = accountGroup.category,
                     accounts = accountGroup.accounts,
-                    currencyTotals = accountGroup.currencyTotals
+                    accountGroup = accountGroup
                 )
             }
         }
@@ -99,16 +127,107 @@ private fun Toolbar() {
 }
 
 @Composable
-private fun AccountGroupSection(
-    state: ViewsState,
-    category: String,
-    accounts: List<com.ivy.legacy.data.model.AccountData>,
-    currencyTotals: List<com.ivy.views.CurrencyTotal>
+private fun FilterTogglesSection(
+    includeExcluded: Boolean,
+    includeArchived: Boolean,
+    onToggleExcluded: () -> Unit,
+    onToggleArchived: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
+            .background(
+                color = UI.colors.pureInverse.copy(alpha = 0.05f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(12.dp)
+    ) {
+        Text(
+            text = "Account Filters",
+            style = UI.typo.b2.style(
+                fontWeight = FontWeight.Medium,
+                color = UI.colors.pureInverse.copy(alpha = 0.7f)
+            )
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Excluded Toggle
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onToggleExcluded() }
+            ) {
+                Text(
+                    text = "Excluded",
+                    style = UI.typo.b2.style(
+                        color = if (includeExcluded) 
+                            UI.colors.pureInverse 
+                        else 
+                            UI.colors.pureInverse.copy(alpha = 0.5f)
+                    )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Switch(
+                    checked = includeExcluded,
+                    onCheckedChange = { onToggleExcluded() }
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            // Archived Toggle
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onToggleArchived() }
+            ) {
+                Text(
+                    text = "Archived",
+                    style = UI.typo.b2.style(
+                        color = if (includeArchived) 
+                            UI.colors.pureInverse 
+                        else 
+                            UI.colors.pureInverse.copy(alpha = 0.5f)
+                    )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Switch(
+                    checked = includeArchived,
+                    onCheckedChange = { onToggleArchived() }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AccountGroupSection(
+    state: ViewsState,
+    category: String,
+    accounts: List<com.ivy.legacy.data.model.AccountData>,
+    accountGroup: com.ivy.views.AccountGroup
+) {
+    val categoryColor = getCategoryColor(category)
+    
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .background(
+                color = categoryColor.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = categoryColor.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(12.dp)
     ) {
         // Category header with currency totals
         Row(
@@ -119,23 +238,51 @@ private fun AccountGroupSection(
             Text(
                 text = category,
                 style = UI.typo.b1.style(
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = categoryColor
                 )
             )
 
-            // Display multiple currency totals
+            // Display base currency total as main amount
             Column(
                 horizontalAlignment = androidx.compose.ui.Alignment.End
             ) {
-                currencyTotals.forEach { currencyTotal ->
-                    BalanceRow(
-                        currency = currencyTotal.currency,
-                        balance = currencyTotal.totalBalance,
-                        balanceFontSize = 16.sp,
-                        currencyFontSize = 12.sp,
-                        textColor = UI.colors.pureInverse,
-                        currencyUpfront = false
-                    )
+                BalanceRow(
+                    currency = state.baseCurrency,
+                    balance = accountGroup.baseCurrencyTotal,
+                    balanceFontSize = 18.sp,
+                    currencyFontSize = 14.sp,
+                    textColor = categoryColor,
+                    currencyUpfront = false
+                )
+                
+                // Show all currency breakdowns below main total
+                Spacer(modifier = Modifier.height(4.dp))
+                accountGroup.currencyTotals.forEach { currencyTotal ->
+                    Row(
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${currencyTotal.currency}: ",
+                            style = UI.typo.b2.style(
+                                color = categoryColor.copy(alpha = 0.7f)
+                            )
+                        )
+                        Text(
+                            text = String.format("%.2f", currencyTotal.originalBalance),
+                            style = UI.typo.b2.style(
+                                color = categoryColor.copy(alpha = 0.7f)
+                            )
+                        )
+                        if (currencyTotal.exchangeRate != null) {
+                            Text(
+                                text = " (${String.format("%.4f", currencyTotal.exchangeRate)})",
+                                style = UI.typo.b2.style(
+                                    color = categoryColor.copy(alpha = 0.5f)
+                                )
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -145,9 +292,7 @@ private fun AccountGroupSection(
         // Accounts list
         accounts.forEach { account ->
             AccountItemRow(
-                name = account.account.name.value,
-                balance = account.balance,
-                currency = account.account.asset.code
+                account = account
             )
             Spacer(modifier = Modifier.height(4.dp))
         }
@@ -158,27 +303,50 @@ private fun AccountGroupSection(
 
 @Composable
 private fun AccountItemRow(
-    name: String,
-    balance: Double,
-    currency: String
+    account: com.ivy.legacy.data.model.AccountData
 ) {
+    val accountColor = Color(account.account.color.value)
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .background(
+                color = accountColor.copy(alpha = 0.08f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
     ) {
-        Text(
-            text = name,
-            style = UI.typo.b2.style()
-        )
+        Row(
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            // Account color indicator
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(
+                        color = accountColor,
+                        shape = RoundedCornerShape(6.dp)
+                    )
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            
+            Text(
+                text = account.account.name.value,
+                style = UI.typo.b2.style(
+                    color = accountColor.copy(alpha = 0.8f)
+                )
+            )
+        }
 
         BalanceRow(
-            currency = currency,
-            balance = balance,
-            balanceFontSize = 16.sp,
-            currencyFontSize = 12.sp,
+            currency = account.account.asset.code,
+            balance = account.balance,
+            balanceFontSize = 14.sp,
+            currencyFontSize = 11.sp,
             textColor = UI.colors.pureInverse,
             currencyUpfront = false
         )
