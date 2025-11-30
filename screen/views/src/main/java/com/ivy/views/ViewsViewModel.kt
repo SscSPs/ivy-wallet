@@ -57,9 +57,22 @@ class ViewsViewModel @Inject constructor(
     private var hideTotalBalance by mutableStateOf(false)
     private var includeExcluded by mutableStateOf(false)  // Default: exclude excluded accounts
     private var includeArchived by mutableStateOf(true)  // Default: include archived accounts
+    private var expandedCategories by mutableStateOf(setOf<String>())  // Track expanded categories
+    private var includeZeroBalance by mutableStateOf(true)  // Default: include zero balance accounts
 
     @Composable
     override fun uiState(): ViewsState {
+        // Calculate net worth correctly: Assets - Liabilities
+        val assetsTotal = groupedAccounts
+            .filter { it.category.uppercase().contains("ASSET") }
+            .sumOf { it.baseCurrencyTotal }
+        
+        val liabilitiesTotal = groupedAccounts
+            .filter { it.category.uppercase().contains("LIABILITY") }
+            .sumOf { it.baseCurrencyTotal }
+        
+        val netWorth = assetsTotal - liabilitiesTotal
+        
         return ViewsState(
             baseCurrency = baseCurrency,
             accountsData = accountsData.toImmutableList(),
@@ -67,6 +80,9 @@ class ViewsViewModel @Inject constructor(
             hideTotalBalance = hideTotalBalance,
             includeExcluded = includeExcluded,
             includeArchived = includeArchived,
+            expandedCategories = expandedCategories.toImmutableList(),
+            includeZeroBalance = includeZeroBalance,
+            netWorth = netWorth,
         )
     }
 
@@ -75,11 +91,22 @@ class ViewsViewModel @Inject constructor(
             is ViewsEvent.LoadData -> loadData()
             is ViewsEvent.ToggleExcluded -> {
                 includeExcluded = !includeExcluded
-                loadData() // Reload data with new filter
+                loadData()
             }
             is ViewsEvent.ToggleArchived -> {
                 includeArchived = !includeArchived
-                loadData() // Reload data with new filter
+                loadData()
+            }
+            is ViewsEvent.ToggleZeroBalance -> {
+                includeZeroBalance = !includeZeroBalance
+                loadData()
+            }
+            is ViewsEvent.ToggleCategoryExpand -> {
+                expandedCategories = if (event.category in expandedCategories) {
+                    expandedCategories - event.category
+                } else {
+                    expandedCategories + event.category
+                }
             }
         }
     }
@@ -118,187 +145,127 @@ class ViewsViewModel @Inject constructor(
                 val baseCurrencyCode = baseCurrencyAct(Unit)
                 
                 // Apply filters based on toggle states
-                val allAccounts = accountRepository.findAll(
-                    includeArchived = includeArchived
-                ).toImmutableList()
+                val allAccounts = accountRepository.findAll(includeArchived = true)
                 
-                println("ViewsScreen: Total accounts found: ${allAccounts.size}, includeExcluded: $includeExcluded, includeArchived: $includeArchived")
-                
-                val accounts = allAccounts.filter { account ->
-                    // Include excluded accounts only if toggle is on
-                    val shouldInclude = if (!includeExcluded && !account.includeInBalance) {
-                        false
-                    } else {
-                        true
-                    }
-                    shouldInclude
-                }.toImmutableList()
-                
-                println("ViewsScreen: Accounts after filtering: ${accounts.size}")
+                val filteredAccounts = allAccounts.filter { account ->
+                    val shouldIncludeByExcluded = includeExcluded || account.includeInBalance
+                    val shouldIncludeByArchived = includeArchived || !account.archived
+                    shouldIncludeByExcluded && shouldIncludeByArchived
+                }
 
                 val accountsDataList = accountDataAct(
                     AccountDataAct.Input(
-                        accounts = accounts,
+                        accounts = filteredAccounts.toImmutableList(),
                         range = range.toCloseTimeRange(),
                         baseCurrency = baseCurrencyCode
                     )
                 )
-                
-                println("ViewsScreen: AccountDataAct returned: ${accountsDataList.size} items")
 
-                // Get exchange rates - use findAll() to get all rates including synced ones
+                // Apply zero balance filter
+                val finalAccountsData = if (includeZeroBalance) {
+                    accountsDataList
+                } else {
+                    accountsDataList.filter { it.balance != 0.0 }
+                }
+
+                // Get exchange rates
                 val exchangeRates = try {
-                    // Use first() to get the first emission without blocking
                     exchangeRatesRepository.findAll().first()
                 } catch (e: Exception) {
                     println("ViewsScreen: Error getting exchange rates: ${e.message}")
                     e.printStackTrace()
                     emptyList()
                 }
-                
-                println("ViewsScreen: Found ${exchangeRates.size} exchange rates")
-                exchangeRates.forEach { rate ->
-                    println("ViewsScreen: Rate: baseCurrency=${rate.baseCurrency.code}, currency=${rate.currency.code}, rate=${rate.rate.value}")
-                }
 
                 val groupedAccounts = groupAccountsByCategoryWithConversion(
-                    accountsDataList.toImmutableList(),
+                    finalAccountsData.toImmutableList(),
                     baseCurrencyCode,
                     exchangeRates
-                )
+                ).toImmutableList()
 
-                this@ViewsViewModel.accountsData = accountsDataList
+                this@ViewsViewModel.accountsData = finalAccountsData
                 this@ViewsViewModel.groupedAccounts = groupedAccounts
-                
-                // Debug logging
-                println("ViewsScreen: Loaded ${accountsDataList.size} accounts, ${groupedAccounts.size} groups")
                 
             } catch (e: Exception) {
                 println("ViewsScreen: Error loading data: ${e.message}")
-                // Handle any exceptions and show empty state
                 this@ViewsViewModel.accountsData = emptyList()
                 this@ViewsViewModel.groupedAccounts = emptyList()
             }
         }
     }
 
-    private fun groupAccountsByCategoryWithConversion(
-    accountsData: ImmutableList<AccountData>,
-    baseCurrency: String,
-    exchangeRates: List<ExchangeRate>
-): ImmutableList<AccountGroup> {
-    if (accountsData.isEmpty()) return emptyList<AccountGroup>().toImmutableList()
-    
-    val grouped = accountsData
-        .groupBy { it.account.accountCategory.name.replace("_", " ") }
-        .map { (category, accounts) ->
-            // Convert each account to base currency
-            val convertedAccounts = accounts.map { accountData ->
-                val currency = accountData.account.asset.code
-                val originalBalance = accountData.balance
-                
-                val baseCurrencyBalance = if (currency == baseCurrency) {
-                    originalBalance
-                } else {
-                    val foundRate = exchangeRates.find { 
-                        it.baseCurrency.code == baseCurrency && 
-                        it.currency.code == currency 
-                    }
-                    
-                    // The rate is inverted: it represents how much currency per 1 base unit
-                    // So we need to use 1/rate to convert currency to base
-                    val rate = foundRate?.rate?.value ?: 1.0
-                    val invertedRate = 1.0 / rate
-                    
-                    println("ViewsScreen: Converting $originalBalance $currency to $baseCurrency")
-                    println("ViewsScreen:   Looking for: baseCurrency=$baseCurrency, currency=$currency")
-                    println("ViewsScreen:   Found rate: $foundRate")
-                    println("ViewsScreen:   Original rate: $rate, Inverted rate: $invertedRate")
-                    println("ViewsScreen:   Result: $originalBalance * $invertedRate = ${originalBalance * invertedRate}")
-                    
-                    originalBalance * invertedRate
-                }
-                
-                Pair(accountData, baseCurrencyBalance)
-            }
-            
-            // Calculate total in base currency by summing all converted amounts
-            val baseCurrencyTotal = convertedAccounts.sumOf { it.second }
-            
-            // Group by currency to show breakdown
-            val currencyTotals = accounts
-                .groupBy { it.account.asset.code }
-                .map { (currency, currencyAccounts) ->
-                    val originalBalance = currencyAccounts.sumOf { it.balance }
-                    
-                    // Get the exchange rate for this currency
-                    val exchangeRate = if (currency == baseCurrency) {
-                        null
-                    } else {
-                        exchangeRates.find { 
-                            it.baseCurrency.code == baseCurrency && 
-                            it.currency.code == currency 
-                        }?.rate?.value
-                    }
-                    
-                    // Calculate what this currency's total converts to
-                    val baseCurrencyBalance = if (currency == baseCurrency) {
-                        originalBalance
-                    } else {
-                        val rate = exchangeRate ?: 1.0
-                        val invertedRate = 1.0 / rate
-                        originalBalance * invertedRate
-                    }
-                    
-                    println("ViewsScreen: Category $category, Currency $currency: original=$originalBalance, rate=$exchangeRate, inverted=${if (exchangeRate != null) 1.0/exchangeRate else null}, converted=$baseCurrencyBalance")
-                    
-                    CurrencyTotal(
-                        currency = currency,
-                        originalBalance = originalBalance,
-                        baseCurrencyBalance = baseCurrencyBalance,
-                        exchangeRate = exchangeRate
-                    )
-                }
-                .sortedBy { it.currency }
-                .toImmutableList()
-            
-            println("ViewsScreen: Category $category: baseCurrencyTotal=$baseCurrencyTotal")
-            
-            AccountGroup(
-                category = category,
-                accounts = accounts.toImmutableList(),
-                currencyTotals = currencyTotals,
-                baseCurrencyTotal = baseCurrencyTotal
-            )
-        }
-        .sortedBy { it.category }
-        .toImmutableList()
-
-    return grouped
-}
-
-private fun groupAccountsByCategory(accountsData: ImmutableList<AccountData>): ImmutableList<AccountGroup> {
-        if (accountsData.isEmpty()) return emptyList<AccountGroup>().toImmutableList()
+    private fun convertToBaseCurrency(
+        amount: Double,
+        fromCurrency: String,
+        baseCurrency: String,
+        exchangeRates: List<ExchangeRate>
+    ): Double {
+        if (fromCurrency == baseCurrency) return amount
         
-        val grouped = accountsData
+        val exchangeRate = exchangeRates.find { 
+            it.baseCurrency.code == baseCurrency && 
+            it.currency.code == fromCurrency 
+        }
+        
+        // Rate is inverted (currency per base unit), so invert it for conversion
+        val rate = exchangeRate?.rate?.value ?: 1.0
+        return amount * (1.0 / rate)
+    }
+
+    private fun groupAccountsByCategoryWithConversion(
+        accountsData: ImmutableList<AccountData>,
+        baseCurrency: String,
+        exchangeRates: List<ExchangeRate>
+    ): List<AccountGroup> {
+        if (accountsData.isEmpty()) return emptyList<AccountGroup>()
+
+        val result = accountsData
             .groupBy { it.account.accountCategory.name.replace("_", " ") }
             .map { (category, accounts) ->
+                // Convert accounts to base currency
+                val convertedAccounts = accounts.map { accountData ->
+                    val baseCurrencyBalance = convertToBaseCurrency(
+                        amount = accountData.balance,
+                        fromCurrency = accountData.account.asset.code,
+                        baseCurrency = baseCurrency,
+                        exchangeRates = exchangeRates
+                    )
+                    Pair(accountData, baseCurrencyBalance)
+                }
+
+                val baseCurrencyTotal = convertedAccounts.sumOf { it.second }
+
+                // Calculate currency breakdowns
                 val currencyTotals = accounts
                     .groupBy { it.account.asset.code }
                     .map { (currency, currencyAccounts) ->
                         val originalBalance = currencyAccounts.sumOf { it.balance }
+                        val baseCurrencyBalance = convertToBaseCurrency(
+                            amount = originalBalance,
+                            fromCurrency = currency,
+                            baseCurrency = baseCurrency,
+                            exchangeRates = exchangeRates
+                        )
+                        
+                        val exchangeRate = if (currency == baseCurrency) {
+                            null
+                        } else {
+                            exchangeRates.find {
+                                it.baseCurrency.code == baseCurrency &&
+                                it.currency.code == currency
+                            }?.rate?.value
+                        }
+
                         CurrencyTotal(
                             currency = currency,
                             originalBalance = originalBalance,
-                            baseCurrencyBalance = originalBalance, // No conversion in fallback
-                            exchangeRate = null
+                            baseCurrencyBalance = baseCurrencyBalance,
+                            exchangeRate = exchangeRate
                         )
                     }
                     .sortedBy { it.currency }
                     .toImmutableList()
-                
-                val baseCurrencyTotal = currencyTotals.sumOf { it.baseCurrencyBalance }
-                
+
                 AccountGroup(
                     category = category,
                     accounts = accounts.toImmutableList(),
@@ -307,8 +274,7 @@ private fun groupAccountsByCategory(accountsData: ImmutableList<AccountData>): I
                 )
             }
             .sortedBy { it.category }
-            .toImmutableList()
-
-        return grouped
+        
+        return result
     }
 }

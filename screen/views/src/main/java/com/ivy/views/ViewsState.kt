@@ -12,6 +12,9 @@ data class ViewsState(
     val hideTotalBalance: Boolean,
     val includeExcluded: Boolean,
     val includeArchived: Boolean,
+    val expandedCategories: ImmutableList<String>, // Categories that are expanded
+    val includeZeroBalance: Boolean, // Include accounts with zero balance
+    val netWorth: Double, // Total net worth in base currency
 )
 
 @Immutable
