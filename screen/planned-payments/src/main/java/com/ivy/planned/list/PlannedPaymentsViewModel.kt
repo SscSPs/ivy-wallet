@@ -12,6 +12,7 @@ import com.ivy.data.db.dao.read.SettingsDao
 import com.ivy.ui.ComposeViewModel
 import com.ivy.data.model.Category
 import com.ivy.data.repository.CategoryRepository
+import com.ivy.domain.features.Features
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.PlannedPaymentRule
 import com.ivy.legacy.utils.ioThread
@@ -30,7 +31,8 @@ class PlannedPaymentsViewModel @Inject constructor(
     private val settingsDao: SettingsDao,
     private val plannedPaymentsLogic: PlannedPaymentsLogic,
     private val categoriesRepository: CategoryRepository,
-    private val accountsAct: AccountsAct
+    private val accountsAct: AccountsAct,
+    private val features: Features
 ) : ComposeViewModel<PlannedPaymentsScreenState, PlannedPaymentsScreenEvent>() {
 
     private var currency by mutableStateOf("")
@@ -64,8 +66,14 @@ class PlannedPaymentsViewModel @Inject constructor(
             recurringPlannedPayment = getRecurringPlannedPayment(),
             oneTimePlannedPayment = getOneTimePlannedPayment(),
             isOneTimePaymentsExpanded = getOneTimePaymentsExpanded(),
-            isRecurringPaymentsExpanded = getRecurringPaymentsExpanded()
+            isRecurringPaymentsExpanded = getRecurringPaymentsExpanded(),
+            shouldShowAccountSpecificColorInTransactions = getShouldShowAccountSpecificColorInTransactions(),
         )
+    }
+
+    @Composable
+    fun getShouldShowAccountSpecificColorInTransactions(): Boolean {
+        return features.showAccountColorsInTransactions.asEnabledState()
     }
 
     @Composable

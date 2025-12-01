@@ -13,12 +13,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -34,6 +39,8 @@ import com.ivy.data.model.primitive.NotBlankTrimmedString
 import com.ivy.design.api.LocalTimeConverter
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
+import com.ivy.design.l1_buildingBlocks.IvyText
+import com.ivy.design.l1_buildingBlocks.SpacerHor
 import com.ivy.legacy.IvyWalletPreview
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.PlannedPaymentRule
@@ -44,6 +51,7 @@ import com.ivy.legacy.utils.formatDateOnlyWithYear
 import com.ivy.legacy.utils.isNotNullOrBlank
 import com.ivy.legacy.utils.timeNowUTC
 import com.ivy.legacy.utils.uppercaseLocal
+import com.ivy.navigation.Navigation
 import com.ivy.navigation.TransactionsScreen
 import com.ivy.navigation.navigation
 import com.ivy.ui.R
@@ -53,14 +61,16 @@ import com.ivy.wallet.ui.theme.Green
 import com.ivy.wallet.ui.theme.Orange
 import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyIcon
+import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.getCustomIconIdS
 import com.ivy.wallet.ui.theme.findContrastTextColor
+import java.util.UUID
 import com.ivy.wallet.ui.theme.toComposeColor
+import androidx.compose.ui.graphics.Color
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import java.time.LocalDateTime
 import java.time.ZoneOffset
-import java.util.UUID
 
 @SuppressLint("ComposeModifierMissing")
 @Composable
@@ -69,6 +79,7 @@ fun LazyItemScope.PlannedPaymentCard(
     categories: ImmutableList<Category>,
     accounts: ImmutableList<Account>,
     plannedPayment: PlannedPaymentRule,
+    shouldShowAccountSpecificColorInTransactions: Boolean,
     onClick: (PlannedPaymentRule) -> Unit,
 ) {
     Spacer(Modifier.height(12.dp))
@@ -77,6 +88,7 @@ fun LazyItemScope.PlannedPaymentCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
+            .padding(top = 12.dp)
             .clip(UI.shapes.r4)
             .clickable {
                 if (accounts.find { it.id == plannedPayment.accountId } != null) {
@@ -93,7 +105,8 @@ fun LazyItemScope.PlannedPaymentCard(
         PlannedPaymentHeaderRow(
             plannedPayment = plannedPayment,
             categories = categories,
-            accounts = accounts
+            accounts = accounts,
+            shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions
         )
 
         Spacer(Modifier.height(16.dp))
@@ -137,66 +150,51 @@ fun LazyItemScope.PlannedPaymentCard(
 private fun PlannedPaymentHeaderRow(
     plannedPayment: PlannedPaymentRule,
     categories: ImmutableList<Category>,
-    accounts: ImmutableList<Account>
+    accounts: ImmutableList<Account>,
+    shouldShowAccountSpecificColorInTransactions: Boolean,
 ) {
     val nav = navigation()
 
-    if (plannedPayment.type != TransactionType.TRANSFER) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
+    val category = plannedPayment.categoryId?.let { targetId -> categories.find { it.id.value == targetId } }
+
+    if (plannedPayment.type == TransactionType.TRANSFER) {
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp),
         ) {
-            Spacer(Modifier.width(20.dp))
-
-            IvyIcon(
-                modifier = Modifier
-                    .background(UI.colors.pure, CircleShape),
-                icon = R.drawable.ic_planned_payments,
-                tint = UI.colors.pureInverse
-            )
-
-            Spacer(Modifier.width(12.dp))
-
-            val category =
-                plannedPayment.categoryId?.let { targetId -> categories.find { it.id.value == targetId } }
             if (category != null) {
-                IvyButton(
-                    iconTint = findContrastTextColor(category.color.value.toComposeColor()),
-                    iconStart = getCustomIconIdS(
-                        category.icon?.id,
-                        R.drawable.ic_custom_category_s
-                    ),
-                    text = category.name.value,
-                    backgroundGradient = Gradient.solid(category.color.value.toComposeColor()),
-                    textStyle = UI.typo.c.style(
-                        color = findContrastTextColor(category.color.value.toComposeColor()),
-                        fontWeight = FontWeight.ExtraBold
-                    ),
-                    padding = 8.dp,
-                    iconEdgePadding = 10.dp
-                ) {
-                    nav.navigateTo(
-                        TransactionsScreen(
-                            accountId = null,
-                            categoryId = category.id.value
-                        )
-                    )
-                }
-
-                Spacer(Modifier.width(12.dp))
+                CategoryBadgeDisplay(category, nav)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+            TransferHeader(
+                accounts = accounts,
+                plannedPayment = plannedPayment,
+                shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions
+            )
+        }
+    } else {
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (category != null) {
+                CategoryBadgeDisplay(category, nav)
             }
 
             val account = accounts.find { it.id == plannedPayment.accountId }
-            IvyButton(
-                backgroundGradient = Gradient.solid(UI.colors.pure),
+
+            val accountBackgroundColor = if (shouldShowAccountSpecificColorInTransactions) {
+                account?.color?.toComposeColor() ?: UI.colors.pure
+            } else {
+                UI.colors.pure
+            }
+
+            TransactionBadge(
                 text = account?.name ?: stringResource(R.string.deleted),
-                iconTint = UI.colors.pureInverse,
-                iconStart = getCustomIconIdS(account?.icon, R.drawable.ic_custom_account_s),
-                textStyle = UI.typo.c.style(
-                    color = UI.colors.pureInverse,
-                    fontWeight = FontWeight.ExtraBold
-                ),
-                padding = 8.dp,
-                iconEdgePadding = 10.dp
+                backgroundColor = accountBackgroundColor,
+                icon = account?.icon,
+                defaultIcon = R.drawable.ic_custom_account_s
             ) {
                 account?.let {
                     nav.navigateTo(
@@ -300,7 +298,9 @@ private fun Preview_oneTime() {
                         intervalType = null,
                         intervalN = null,
                         type = TransactionType.EXPENSE
-                    )
+                    ),
+
+                    shouldShowAccountSpecificColorInTransactions = false,
                 ) {}
             }
         }
@@ -328,6 +328,7 @@ private fun Preview_recurring() {
                     baseCurrency = "BGN",
                     categories = persistentListOf(shisha),
                     accounts = persistentListOf(account),
+                    shouldShowAccountSpecificColorInTransactions = true,
                     plannedPayment = PlannedPaymentRule(
                         accountId = account.id,
                         title = "Tabu",
@@ -377,8 +378,203 @@ private fun Preview_recurringError() {
                         intervalN = null,
                         type = TransactionType.EXPENSE
                     ),
+                    shouldShowAccountSpecificColorInTransactions = true,
                 ) {}
             }
         }
+    }
+}
+
+@Composable
+fun CategoryBadgeDisplay(
+    category: Category,
+    nav: Navigation,
+) {
+    TransactionBadge(
+        text = category.name.value,
+        backgroundColor = category.color.value.toComposeColor(),
+        icon = category.icon?.id,
+        defaultIcon = R.drawable.ic_custom_category_s
+    ) {
+        // Navigation logic
+        nav.navigateTo(
+            TransactionsScreen(
+                accountId = null,
+                categoryId = category.id.value
+            )
+        )
+    }
+}
+
+private const val TransferHeaderGradientThreshold = 0.35f
+
+@Composable
+private fun TransferHeader(
+    accounts: List<Account>,
+    plannedPayment: PlannedPaymentRule,
+    shouldShowAccountSpecificColorInTransactions: Boolean
+) {
+    val account = remember(accounts, plannedPayment) {
+        accounts.find { plannedPayment.accountId == it.id }
+    }
+    val toAccount = remember(accounts, plannedPayment) {
+        accounts.find { plannedPayment.toAccountId == it.id }
+    }
+
+    Row(
+        modifier = Modifier
+            .then(
+                if (account != null && toAccount != null) {
+                    Modifier
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                0f to account.color.toComposeColor(),
+                                (TransferHeaderGradientThreshold) to account.color.toComposeColor(),
+                                (1f - TransferHeaderGradientThreshold) to toAccount.color.toComposeColor(),
+                                1f to toAccount.color.toComposeColor()
+                            ),
+                            shape = UI.shapes.rFull
+                        )
+                } else {
+                    Modifier.background(UI.colors.pure, UI.shapes.rFull)
+                }
+            ),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Spacer(Modifier.width(8.dp))
+
+        val accountContrastColor =
+            if (shouldShowAccountSpecificColorInTransactions && account != null) {
+                findContrastTextColor(account.color.toComposeColor())
+            } else {
+                UI.colors.pureInverse
+            }
+
+        ItemIconSDefaultIcon(
+            iconName = account?.icon,
+            defaultIcon = R.drawable.ic_custom_account_s,
+            tint = accountContrastColor
+        )
+
+        Spacer(Modifier.width(4.dp))
+
+        Text(
+            modifier = Modifier
+                .padding(vertical = 8.dp),
+            // used toString() in case of null
+            text = account?.name.toString(),
+            style = UI.typo.c.style(
+                fontWeight = FontWeight.ExtraBold,
+                color = accountContrastColor
+            )
+        )
+
+        Spacer(Modifier.width(12.dp))
+
+        IvyIcon(icon = R.drawable.ic_arrow_right, tint = accountContrastColor)
+
+        Spacer(Modifier.width(12.dp))
+
+        val toAccountContrastColor =
+            if (shouldShowAccountSpecificColorInTransactions && toAccount != null) {
+                findContrastTextColor(toAccount.color.toComposeColor())
+            } else {
+                UI.colors.pureInverse
+            }
+
+        ItemIconSDefaultIcon(
+            iconName = toAccount?.icon,
+            defaultIcon = R.drawable.ic_custom_account_s,
+            tint = toAccountContrastColor
+        )
+
+        Spacer(Modifier.width(4.dp))
+
+        Text(
+            modifier = Modifier
+                .padding(vertical = 8.dp),
+            // used toString() in case of null
+            text = toAccount?.name.toString(),
+            style = UI.typo.c.style(
+                fontWeight = FontWeight.ExtraBold,
+                color = toAccountContrastColor
+            )
+        )
+
+        Spacer(Modifier.width(20.dp))
+    }
+}
+
+@Composable
+fun AccountBadge(
+    text: String,
+    backgroundColor: Color,
+    icon: String?,
+    defaultIcon: Int,
+    nav: Navigation,
+    accountId: UUID?
+) {
+    IvyButton(
+        iconTint = findContrastTextColor(backgroundColor),
+        iconStart = getCustomIconIdS(icon, defaultIcon),
+        text = text,
+        backgroundGradient = Gradient.solid(backgroundColor),
+        textStyle = UI.typo.nB2.style(
+            color = findContrastTextColor(backgroundColor),
+            fontWeight = FontWeight.SemiBold
+        ),
+        padding = 6.dp,
+        iconEdgePadding = 8.dp
+    ) {
+        nav.navigateTo(
+            TransactionsScreen(
+                accountId = accountId,
+                categoryId = null
+            )
+        )
+    }
+}
+
+@Composable
+private fun TransactionBadge(
+    text: String,
+    backgroundColor: Color,
+    icon: String?,
+    @DrawableRes
+    defaultIcon: Int,
+
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clip(UI.shapes.rFull)
+            .background(backgroundColor, UI.shapes.rFull)
+            .clickable {
+                onClick()
+            }
+            .padding(end = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SpacerHor(width = 8.dp)
+
+        val contrastColor = findContrastTextColor(backgroundColor)
+
+        ItemIconSDefaultIcon(
+            iconName = icon,
+            defaultIcon = defaultIcon,
+            tint = contrastColor
+        )
+
+        SpacerHor(width = 4.dp)
+
+        IvyText(
+            text = text,
+            typo = UI.typo.c.style(
+                color = contrastColor,
+                fontWeight = FontWeight.ExtraBold
+            )
+        )
+
+        SpacerHor(width = 20.dp)
     }
 }

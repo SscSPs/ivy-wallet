@@ -40,6 +40,11 @@ data class PlannedPaymentRuleEntity(
     val title: String? = null,
     @SerialName("description")
     val description: String? = null,
+    @SerialName("toAccountId")
+    @Serializable(with = KSerializerUUID::class)
+    val toAccountId: UUID? = null,
+    @SerialName("toAmount")
+    val toAmount: Double? = null,
 
     @Deprecated("Obsolete field used for cloud sync. Can't be deleted because of backwards compatibility")
     @SerialName("isSynced")

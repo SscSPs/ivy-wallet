@@ -79,6 +79,7 @@ private fun BoxWithConstraintsScope.UI(
         recurringExpenses = state.recurringExpenses,
         oneTimeExpanded = state.isOneTimePaymentsExpanded,
         recurringExpanded = state.isRecurringPaymentsExpanded,
+        shouldShowAccountSpecificColorInTransactions = state.shouldShowAccountSpecificColorInTransactions,
         setOneTimeExpanded = {
             onEvent(PlannedPaymentsScreenEvent.OnOneTimePaymentsExpanded(it))
         },
@@ -160,7 +161,8 @@ private fun Preview() {
                 recurringExpenses = 1025.5,
                 recurringIncome = 0.0,
                 isOneTimePaymentsExpanded = true,
-                isRecurringPaymentsExpanded = true
+                isRecurringPaymentsExpanded = true,
+                shouldShowAccountSpecificColorInTransactions = true
             )
         )
     }

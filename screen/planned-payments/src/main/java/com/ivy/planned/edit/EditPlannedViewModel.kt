@@ -67,6 +67,7 @@ class EditPlannedViewModel @Inject constructor(
     private var initialTitle by mutableStateOf<String?>(null)
     private var description by mutableStateOf<String?>(null)
     private var account by mutableStateOf<Account?>(null)
+    private var toAccount by mutableStateOf<Account?>(null)
     private var category by mutableStateOf<Category?>(null)
     private var amount by mutableDoubleStateOf(0.0)
     private var currency by mutableStateOf("")
@@ -96,6 +97,7 @@ class EditPlannedViewModel @Inject constructor(
             intervalN = getIntervalN(),
             oneTime = getOneTime(),
             account = getAccount(),
+            toAccount = getToAccount(),
             category = getCategory(),
             amount = getAmount(),
             initialTitle = getInitialTitle(),
@@ -168,6 +170,11 @@ class EditPlannedViewModel @Inject constructor(
     }
 
     @Composable
+    private fun getToAccount(): Account? {
+        return toAccount
+    }
+
+    @Composable
     private fun getCategory(): Category? {
         return category
     }
@@ -230,6 +237,7 @@ class EditPlannedViewModel @Inject constructor(
             is EditPlannedScreenEvent.OnCreateAccount -> createAccount(event.data)
             is EditPlannedScreenEvent.OnCreateCategory -> createCategory(event.data)
             is EditPlannedScreenEvent.OnAccountChanged -> updateAccount(event.newAccount)
+            is EditPlannedScreenEvent.OnToAccountChanged -> updateToAccount(event.newToAccount)
             is EditPlannedScreenEvent.OnAmountChanged -> updateAmount(event.newAmount)
             is EditPlannedScreenEvent.OnTitleChanged -> updateTitle(event.newTitle)
             is EditPlannedScreenEvent.OnRuleChanged ->
@@ -290,7 +298,9 @@ class EditPlannedViewModel @Inject constructor(
                 accountId = screen.accountId ?: accounts.first().id,
                 categoryId = screen.categoryId,
                 title = screen.title,
-                description = screen.description
+                description = screen.description,
+                toAccountId = null,
+                toAmount = null
             )
 
             display(loadedRule!!)
@@ -309,6 +319,18 @@ class EditPlannedViewModel @Inject constructor(
         description = rule.description
         val selectedAccount = ioThread { accountDao.findById(rule.accountId)!!.toLegacyDomain() }
         account = selectedAccount
+        
+        // Load toAccount properly
+        toAccount = if (rule.toAccountId != null) {
+            println("DEBUG: Loading toAccount from database - toAccountId: ${rule.toAccountId}")
+            val account = ioThread { accountDao.findById(rule.toAccountId!!)?.toLegacyDomain() }
+            println("DEBUG: Loaded toAccount: $account")
+            account
+        } else {
+            println("DEBUG: No toAccountId found in rule")
+            null
+        }
+        println("DEBUG: Final toAccount state: $toAccount")
         category = rule.categoryId?.let {
             ioThread { categoryRepository.findById(CategoryId(it)) }
         }
@@ -392,6 +414,15 @@ class EditPlannedViewModel @Inject constructor(
         saveIfEditMode()
     }
 
+    private fun updateToAccount(newToAccount: Account) {
+        loadedRule = loadedRule().copy(
+            toAccountId = newToAccount.id
+        )
+        this@EditPlannedViewModel.toAccount = newToAccount
+
+        saveIfEditMode()
+    }
+
     private fun updateTransactionType(newTransactionType: TransactionType) {
         loadedRule = loadedRule().copy(
             type = newTransactionType
@@ -415,6 +446,7 @@ class EditPlannedViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 ioThread {
+                    println("DEBUG: Saving planned payment - type: $transactionType, account: $account, toAccount: $toAccount")
                     loadedRule = loadedRule().copy(
                         type = transactionType ?: error("no transaction type"),
                         startDate = with(timeConverter) { startDate?.toUTC() }
@@ -423,12 +455,16 @@ class EditPlannedViewModel @Inject constructor(
                         intervalType = intervalType ?: error("no intervalType"),
                         categoryId = category?.id?.value,
                         accountId = account?.id ?: error("no accountId"),
+                        toAccountId = toAccount?.id,
+                        toAmount = if (transactionType == TransactionType.TRANSFER) amount else null,
                         title = title?.trim(),
                         description = description?.trim(),
                         amount = amount ?: error("no amount"),
 
                         isSynced = false
                     )
+                    
+                    println("DEBUG: Loaded rule after copy - toAccountId: ${loadedRule().toAccountId}, toAmount: ${loadedRule().toAmount}")
 
                     plannedPaymentRuleWriter.save(loadedRule().toEntity())
                     plannedPaymentsGenerator.generate(loadedRule())
@@ -444,12 +480,13 @@ class EditPlannedViewModel @Inject constructor(
     }
 
     private fun validate(): Boolean {
-        if (transactionType == TransactionType.TRANSFER) {
+        if (amount == 0.0) {
             return false
         }
 
-        if (amount == 0.0) {
-            return false
+        // For transfers, validate both accounts are selected and different
+        if (transactionType == TransactionType.TRANSFER) {
+            return toAccount != null && account != null && account?.id != toAccount?.id
         }
 
         return if (oneTime) validateOneTime() else validateRecurring()

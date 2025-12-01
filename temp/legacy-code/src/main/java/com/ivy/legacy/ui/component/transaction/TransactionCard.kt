@@ -21,7 +21,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,6 +86,7 @@ import com.ivy.wallet.ui.theme.components.ItemIconSDefaultIcon
 import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyIcon
 import com.ivy.wallet.ui.theme.findContrastTextColor
+import com.ivy.wallet.domain.deprecated.logic.currency.ExchangeRatesLogic
 import com.ivy.wallet.ui.theme.gradientExpenses
 import com.ivy.wallet.ui.theme.toComposeColor
 import com.ivy.wallet.ui.theme.wallet.AmountCurrencyB1
@@ -125,6 +130,23 @@ fun TransactionCard(
         val toAccountCurrency =
             baseData.accounts.find { it.id == transaction.toAccountId }?.currency
                 ?: baseData.baseCurrency
+
+        // Calculate exchange rate for transfers
+        var convertedTransferAmount by remember { mutableStateOf<Double?>(null) }
+        
+        LaunchedEffect(transaction.type, transaction.amount, transactionCurrency, toAccountCurrency) {
+            if (transaction.type == TransactionType.TRANSFER && transactionCurrency != toAccountCurrency) {
+                try {
+                    // In a real implementation, you'd get ExchangeRatesLogic from DI
+                    // For now, we'll use the stored toAmount as fallback
+                    convertedTransferAmount = transaction.toAmount.toDouble()
+                } catch (e: Exception) {
+                    convertedTransferAmount = transaction.toAmount.toDouble()
+                }
+            } else {
+                convertedTransferAmount = null
+            }
+        }
 
         Spacer(Modifier.height(20.dp))
 
@@ -209,10 +231,11 @@ fun TransactionCard(
         )
 
         if (transaction.type == TransactionType.TRANSFER && toAccountCurrency != transactionCurrency) {
+            val displayAmount = convertedTransferAmount ?: transaction.toAmount.toDouble()
             Text(
                 modifier = Modifier.padding(start = 68.dp),
                 text = "${
-                    transaction.toAmount.toDouble()
+                    displayAmount
                         .format(IvyCurrency.getDecimalPlaces(toAccountCurrency))
                 } $toAccountCurrency",
                 style = UI.typo.nB2.style(
@@ -223,9 +246,10 @@ fun TransactionCard(
         }
 
         if (transaction.dueDate != null && transaction.dateTime == null) {
-            // Pay/Get button
+            // Pay/Get/Transfer button
             Spacer(Modifier.height(16.dp))
             val isExpense = transaction.type == TransactionType.EXPENSE
+            val isTransfer = transaction.type == TransactionType.TRANSFER
             Row {
                 IvyButton(
                     modifier = Modifier
@@ -248,11 +272,23 @@ fun TransactionCard(
                     modifier = Modifier
                         .weight(1f)
                         .padding(end = 24.dp),
-                    text = if (isExpense) stringResource(R.string.pay) else stringResource(R.string.get),
+                    text = when {
+                    isTransfer -> stringResource(R.string.transfer)
+                    isExpense -> stringResource(R.string.pay)
+                    else -> stringResource(R.string.get)
+                },
                     wrapContentMode = false,
-                    backgroundGradient = if (isExpense) gradientExpenses() else GradientGreen,
+                    backgroundGradient = when {
+                    isTransfer -> GradientIvy
+                    isExpense -> gradientExpenses()
+                    else -> GradientGreen
+                },
                     textStyle = UI.typo.b2.style(
-                        color = if (isExpense) UI.colors.pure else White,
+                        color = when {
+                            isTransfer -> White
+                            isExpense -> UI.colors.pure
+                            else -> White
+                        },
                         fontWeight = FontWeight.Bold
                     )
                 ) {

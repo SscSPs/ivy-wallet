@@ -85,8 +85,9 @@ class PlannedPaymentsGenerator @Inject constructor(
             description = rule.description,
             dueDate = dueDate,
             dateTime = null,
-            toAccountId = null,
-            isSynced = false
+            toAccountId = rule.toAccountId,
+            isSynced = false,
+            toAmount = rule.toAmount?.toBigDecimal() ?: rule.amount.toBigDecimal()
         ).toDomain(transactionMapper)?.let {
             transactionRepository.save(it)
         }

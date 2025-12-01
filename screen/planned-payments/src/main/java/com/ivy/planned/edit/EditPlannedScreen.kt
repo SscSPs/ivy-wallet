@@ -152,16 +152,14 @@ private fun BoxWithConstraintsScope.UI(
             }
         )
 
-        if (state.transactionType != TransactionType.TRANSFER) {
-            Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(32.dp))
 
-            Category(
-                category = state.category,
-                onChooseCategory = {
-                    onEvent(EditPlannedScreenEvent.OnCategoryModalVisible(true))
-                }
-            )
-        }
+        Category(
+            category = state.category,
+            onChooseCategory = {
+                onEvent(EditPlannedScreenEvent.OnCategoryModalVisible(true))
+            }
+        )
 
         Spacer(Modifier.height(32.dp))
 
@@ -222,7 +220,7 @@ private fun BoxWithConstraintsScope.UI(
         type = state.transactionType,
         accounts = state.accounts,
         selectedAccount = state.account,
-        toAccount = null,
+        toAccount = state.toAccount,
         amount = state.amount,
         currency = state.currency,
 
@@ -270,7 +268,7 @@ private fun BoxWithConstraintsScope.UI(
             }
         },
         onSelectedAccountChanged = { onEvent(EditPlannedScreenEvent.OnAccountChanged(it)) },
-        onToAccountChanged = { },
+        onToAccountChanged = { onEvent(EditPlannedScreenEvent.OnToAccountChanged(it)) },
         onAddNewAccount = {
             onEvent(
                 EditPlannedScreenEvent.OnAccountModalDataChanged(
@@ -355,7 +353,7 @@ private fun BoxWithConstraintsScope.UI(
     ChangeTransactionTypeModal(
         title = stringResource(R.string.set_payment_type),
         visible = state.transactionTypeModalVisible,
-        includeTransferType = false,
+        includeTransferType = true,
         initialType = state.transactionType,
         dismiss = {
             onEvent(EditPlannedScreenEvent.OnTransactionTypeModalVisible(false))
@@ -398,12 +396,12 @@ private fun BoxWithConstraintsScope.UI(
 private fun shouldFocusCategory(
     category: Category?,
     type: TransactionType,
-): Boolean = category == null && type != TransactionType.TRANSFER
+): Boolean = category == null 
 
 private fun shouldFocusTitle(
     titleTextFieldValue: TextFieldValue,
     type: TransactionType,
-): Boolean = titleTextFieldValue.text.isBlank() && type != TransactionType.TRANSFER
+): Boolean = titleTextFieldValue.text.isBlank()
 
 private fun shouldFocusRecurring(
     startDate: LocalDateTime?,
@@ -438,6 +436,7 @@ private fun Preview() {
                 description = null,
                 category = null,
                 account = Account(name = "phyre", Orange.toArgb()),
+                toAccount = null,
                 amount = 0.0,
                 transactionType = TransactionType.INCOME,
                 categories = persistentListOf(),

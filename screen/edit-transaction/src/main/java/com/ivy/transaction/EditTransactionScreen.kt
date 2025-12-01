@@ -460,12 +460,10 @@ private fun BoxWithConstraintsScope.UI(
                     } else {
                         // no changes, pay
                         ModalCheck(
-                            label = if (transactionType == TransactionType.EXPENSE) {
-                                stringResource(
-                                    R.string.pay
-                                )
-                            } else {
-                                stringResource(R.string.get)
+                            label = when (transactionType) {
+                                TransactionType.TRANSFER -> stringResource(R.string.transfer)
+                                TransactionType.EXPENSE -> stringResource(R.string.pay)
+                                else -> stringResource(R.string.get)
                             }
                         ) {
                             onPayPlannedPayment()

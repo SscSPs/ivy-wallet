@@ -52,6 +52,7 @@ fun PlannedPaymentsLazyColumn(
     recurringExpenses: Double,
     oneTimeExpanded: Boolean,
     recurringExpanded: Boolean,
+    shouldShowAccountSpecificColorInTransactions: Boolean,
     setOneTimeExpanded: (Boolean) -> Unit,
     setRecurringExpanded: (Boolean) -> Unit,
     listState: LazyListState = rememberLazyListState(),
@@ -86,7 +87,8 @@ fun PlannedPaymentsLazyColumn(
             recurringIncome = recurringIncome,
             recurringExpenses = recurringExpenses,
             recurringExpanded = recurringExpanded,
-            setRecurringExpanded = setRecurringExpanded
+            setRecurringExpanded = setRecurringExpanded,
+            shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions
         )
     }
 }
@@ -110,6 +112,7 @@ private fun LazyListScope.plannedPaymentItems(
     recurringExpenses: Double,
     recurringExpanded: Boolean,
     setRecurringExpanded: (Boolean) -> Unit,
+    shouldShowAccountSpecificColorInTransactions: Boolean,
 ) {
     if (oneTime.isNotEmpty()) {
         item {
@@ -131,6 +134,7 @@ private fun LazyListScope.plannedPaymentItems(
                     categories = categories,
                     accounts = accounts,
                     plannedPayment = item,
+                    shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
                 ) { plannedPaymentRule ->
                     onPlannedPaymentClick(
                         nav = nav,
@@ -162,6 +166,7 @@ private fun LazyListScope.plannedPaymentItems(
                     categories = categories,
                     accounts = accounts,
                     plannedPayment = item,
+                    shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
                 ) { plannedPaymentRule ->
                     onPlannedPaymentClick(
                         nav = nav,

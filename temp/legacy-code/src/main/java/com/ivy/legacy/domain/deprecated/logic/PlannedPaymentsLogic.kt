@@ -166,11 +166,40 @@ class PlannedPaymentsLogic @Inject constructor(
     ) {
         if (transaction.dueDate == null || transaction.dateTime != null) return
 
+        // Calculate exchange rate for transfers
+        val calculatedToAmount = if (transaction.type == TransactionType.TRANSFER && transaction.toAccountId != null) {
+            try {
+                val fromAccount = ioThread { accountDao.findById(transaction.accountId)?.toLegacyDomain() }
+                val toAccount = ioThread { accountDao.findById(transaction.toAccountId!!)?.toLegacyDomain() }
+                
+                if (fromAccount != null && toAccount != null && 
+                    fromAccount.currency != null && toAccount.currency != null &&
+                    fromAccount.currency != toAccount.currency) {
+                    val baseCurrency = settingsDao.findFirst().currency
+                    // Use current exchange rates to calculate the converted amount
+                    exchangeRatesLogic.convertAmount(
+                        baseCurrency = baseCurrency,
+                        amount = transaction.amount.toDouble(),
+                        fromCurrency = fromAccount.currency!!,
+                        toCurrency = toAccount.currency!!
+                    ).toBigDecimal()
+                } else {
+                    transaction.toAmount
+                }
+            } catch (e: Exception) {
+                // Fallback to stored toAmount if exchange rate calculation fails
+                transaction.toAmount
+            }
+        } else {
+            transaction.toAmount
+        }
+
         val paidTransaction = transaction.copy(
             paidFor = transaction.dueDate,
             dueDate = null,
             dateTime = timeProvider.utcNow(),
             isSynced = false,
+            toAmount = calculatedToAmount,
         )
 
         val plannedPaymentRule = ioThread {
