@@ -3,14 +3,25 @@ package com.ivy.accounts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
+import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.material.icons.filled.CreditCard
+import androidx.compose.material.icons.filled.Money
+import androidx.compose.material.icons.filled.Savings
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -63,6 +74,51 @@ import com.ivy.wallet.ui.theme.Green
 import androidx.compose.ui.graphics.toArgb
 import java.util.UUID
 import java.time.Instant
+
+// Category icon and color mappings
+private fun getCategoryIcon(category: AccountCategory): androidx.compose.ui.graphics.vector.ImageVector {
+    return when (category) {
+        AccountCategory.ASSET -> Icons.Default.Savings
+        AccountCategory.LIABILITY -> Icons.Default.CreditCard
+        AccountCategory.EXPENSE -> Icons.Default.Money
+        AccountCategory.INCOME -> Icons.Default.AttachMoney
+        AccountCategory.EQUITY -> Icons.Default.AccountBalance
+    }
+}
+
+private fun getCategoryColor(category: AccountCategory): Color {
+    return when (category) {
+        AccountCategory.ASSET -> Color(0xFF4CAF50) // Green
+        AccountCategory.LIABILITY -> Color(0xFFFF9800) // Orange
+        AccountCategory.EXPENSE -> Color(0xFFF44336) // Red
+        AccountCategory.INCOME -> Color(0xFF2196F3) // Blue
+        AccountCategory.EQUITY -> Color(0xFF9C27B0) // Purple
+    }
+}
+
+@Composable
+private fun CategoryBadgeIcon(
+    category: AccountCategory,
+    modifier: Modifier = Modifier
+) {
+    val categoryColor = getCategoryColor(category)
+    val categoryIcon = getCategoryIcon(category)
+    
+    Box(
+        modifier = modifier
+            .size(12.dp)
+            .background(categoryColor, CircleShape)
+            .padding(1.5.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = categoryIcon,
+            contentDescription = category.name,
+            tint = Color.White,
+            modifier = Modifier.size(9.dp)
+        )
+    }
+}
 
 @Composable
 fun AccountCard(
@@ -175,11 +231,21 @@ private fun AccountHeader(
         ) {
             Spacer(Modifier.width(20.dp))
 
-            ItemIconSDefaultIcon(
-                iconName = account.icon?.id,
-                defaultIcon = R.drawable.ic_custom_account_s,
-                tint = contrastColor
-            )
+            Box {
+                ItemIconSDefaultIcon(
+                    iconName = account.icon?.id,
+                    defaultIcon = R.drawable.ic_custom_account_s,
+                    tint = contrastColor
+                )
+                
+                // Category badge positioned at bottom-right of account icon
+                CategoryBadgeIcon(
+                    category = account.accountCategory,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .offset(x = (-4).dp, y = (-4).dp)
+                )
+            }
 
             Spacer(Modifier.width(8.dp))
 
@@ -194,28 +260,19 @@ private fun AccountHeader(
 
         Spacer(Modifier.height(4.dp))
 
-        // Bottom row with category/status badges on left and reconciliation text on right
+        // Bottom row with status badges only (reconciliation moved below balance)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left side: Category and status badges
+            // Left side: Status badges only (category removed)
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = account.accountCategory.name.replace("_", " "),
-                    style = UI.typo.c.style(
-                        color = account.color.value.toComposeColor().dynamicContrast()
-                    )
-                )
-
                 if (!account.includeInBalance) {
-                    Spacer(Modifier.width(8.dp))
-
                     Text(
                         text = stringResource(R.string.excluded),
                         style = UI.typo.c.style(
@@ -225,7 +282,9 @@ private fun AccountHeader(
                 }
 
                 if (account.archived) {
-                    Spacer(Modifier.width(8.dp))
+                    if (!account.includeInBalance) {
+                        Spacer(Modifier.width(8.dp))
+                    }
 
                     Text(
                         text = stringResource(R.string.archived),
@@ -234,33 +293,6 @@ private fun AccountHeader(
                         )
                     )
                 }
-            }
-
-            // Right side: Reconciliation date
-            account.reconciliationDate?.let { instant ->
-                val date = instant.atZone(ZoneId.systemDefault()).toLocalDate()
-                val now = LocalDate.now()
-
-                val yearsAgo = ChronoUnit.YEARS.between(date, now)
-                val monthsAgo = ChronoUnit.MONTHS.between(date, now)
-                val daysAgo = ChronoUnit.DAYS.between(date, now)
-
-                val formatter = DateTimeFormatter.ofPattern("MMM d") // e.g. "Nov 2"
-                val formattedDate = date.format(formatter)
-
-                val relativeText = when {
-                    yearsAgo > 0 -> "${yearsAgo}y${if (yearsAgo > 1) "" else ""} ago"
-                    monthsAgo > 0 -> "${monthsAgo}m${if (monthsAgo > 1) "" else ""} ago"
-                    daysAgo > 7 -> formattedDate
-                    daysAgo > 1 -> "${daysAgo}d ago"
-                    daysAgo == 1L -> "1d ago"
-                    else -> "Today"
-                }
-
-                Text(
-                    text = relativeText,
-                    style = UI.typo.c.style(color = account.color.value.toComposeColor().dynamicContrast())
-                )
             }
         }
 
@@ -294,6 +326,43 @@ private fun AccountHeader(
                 currency = baseCurrency,
                 balance = accountData.balanceBaseCurrency!!,
                 currencyUpfront = false
+            )
+        }
+
+        // Detailed reconciliation info below balance
+        account.reconciliationDate?.let { instant ->
+            val date = instant.atZone(ZoneId.systemDefault()).toLocalDate()
+            val now = LocalDate.now()
+
+            val yearsAgo = ChronoUnit.YEARS.between(date, now)
+            val monthsAgo = ChronoUnit.MONTHS.between(date, now)
+            val daysAgo = ChronoUnit.DAYS.between(date, now)
+            val hoursAgo = ChronoUnit.HOURS.between(instant, Instant.now())
+
+            val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy") // e.g. "Nov 2, 2023"
+            val timeFormatter = DateTimeFormatter.ofPattern("h:mm a").withZone(ZoneId.systemDefault()) // e.g. "3:45 PM"
+            val formattedDate = date.format(dateFormatter)
+            val formattedTime = timeFormatter.format(instant)
+
+            val detailedText = when {
+                yearsAgo > 0 -> "Reconciled $formattedDate (${yearsAgo}y${if (yearsAgo > 1) "s" else ""} ago)"
+                monthsAgo > 0 -> "Reconciled $formattedDate (${monthsAgo}m${if (monthsAgo > 1) "s" else ""} ago)"
+                daysAgo > 7 -> "Reconciled $formattedDate"
+                daysAgo > 1 -> "Reconciled $formattedDate (${daysAgo}d${if (daysAgo > 1) "s" else ""} ago)"
+                daysAgo == 1L -> "Reconciled yesterday at $formattedTime"
+                hoursAgo < 24 && hoursAgo > 0 -> "Reconciled today at $formattedTime (${hoursAgo}h${if (hoursAgo > 1) "s" else ""} ago)"
+                else -> "Reconciled today at $formattedTime"
+            }
+
+            Spacer(Modifier.height(4.dp))
+
+            Text(
+                text = detailedText,
+                style = UI.typo.c.style(
+                    color = account.color.value.toComposeColor().dynamicContrast(),
+                    fontWeight = FontWeight.Medium
+                ),
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
 
