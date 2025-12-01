@@ -65,7 +65,7 @@ data class Account(
                 orderNum = orderNum,
                 archived = archived,
                 reconciliationDate = reconciliationDate,
-                accountCategory = accountCategory
+                accountCategory = accountCategory,
             )
         }
     }

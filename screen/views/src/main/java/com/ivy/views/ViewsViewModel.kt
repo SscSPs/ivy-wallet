@@ -59,6 +59,7 @@ class ViewsViewModel @Inject constructor(
     private var includeArchived by mutableStateOf(true)  // Default: include archived accounts
     private var expandedCategories by mutableStateOf(setOf<String>())  // Track expanded categories
     private var includeZeroBalance by mutableStateOf(true)  // Default: include zero balance accounts
+    private var filterOverlayVisible by mutableStateOf(false) // Filter popup visibility
 
     @Composable
     override fun uiState(): ViewsState {
@@ -83,6 +84,7 @@ class ViewsViewModel @Inject constructor(
             expandedCategories = expandedCategories.toImmutableList(),
             includeZeroBalance = includeZeroBalance,
             netWorth = netWorth,
+            filterOverlayVisible = filterOverlayVisible,
         )
     }
 
@@ -107,6 +109,9 @@ class ViewsViewModel @Inject constructor(
                 } else {
                     expandedCategories + event.category
                 }
+            }
+            is ViewsEvent.OnFilterOverlayVisible -> {
+                filterOverlayVisible = event.filterOverlayVisible
             }
         }
     }

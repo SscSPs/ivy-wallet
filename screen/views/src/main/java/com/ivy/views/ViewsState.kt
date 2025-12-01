@@ -15,6 +15,7 @@ data class ViewsState(
     val expandedCategories: ImmutableList<String>, // Categories that are expanded
     val includeZeroBalance: Boolean, // Include accounts with zero balance
     val netWorth: Double, // Total net worth in base currency
+    val filterOverlayVisible: Boolean, // Filter popup visibility
 )
 
 @Immutable

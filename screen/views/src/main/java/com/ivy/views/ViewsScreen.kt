@@ -39,6 +39,20 @@ import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.tooling.preview.Preview
 import com.ivy.legacy.IvyWalletPreview
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import java.util.UUID
+import com.ivy.wallet.ui.theme.modal.IvyModal
+import com.ivy.wallet.ui.theme.modal.ModalTitle
+import com.ivy.wallet.ui.theme.modal.ModalSave
 
 // UI Constants
 private object UiConstants {
@@ -100,22 +114,16 @@ fun BoxWithConstraintsScope.ViewsScreen() {
             .fillMaxSize()
             .systemBarsPadding()
     ) {
-        Toolbar()
+        Toolbar(
+            onFilterClick = { 
+                viewModel.onEvent(ViewsEvent.OnFilterOverlayVisible(true))
+            }
+        )
 
         // Net Worth Section
         NetWorthSection(
             netWorth = state.netWorth,
             baseCurrency = state.baseCurrency
-        )
-
-        // Filter Toggles
-        FilterTogglesSection(
-            includeExcluded = state.includeExcluded,
-            includeArchived = state.includeArchived,
-            includeZeroBalance = state.includeZeroBalance,
-            onToggleExcluded = { viewModel.onEvent(ViewsEvent.ToggleExcluded) },
-            onToggleArchived = { viewModel.onEvent(ViewsEvent.ToggleArchived) },
-            onToggleZeroBalance = { viewModel.onEvent(ViewsEvent.ToggleZeroBalance) }
         )
 
         LazyColumn(
@@ -136,16 +144,36 @@ fun BoxWithConstraintsScope.ViewsScreen() {
             }
         }
     }
+
+    // Filter Modal
+    ViewsFilterModal(
+        visible = state.filterOverlayVisible,
+        includeExcluded = state.includeExcluded,
+        includeArchived = state.includeArchived,
+        includeZeroBalance = state.includeZeroBalance,
+        dismiss = { 
+            viewModel.onEvent(ViewsEvent.OnFilterOverlayVisible(false))
+        },
+        onToggleExcluded = { 
+            viewModel.onEvent(ViewsEvent.ToggleExcluded)
+        },
+        onToggleArchived = { 
+            viewModel.onEvent(ViewsEvent.ToggleArchived)
+        },
+        onToggleZeroBalance = { 
+            viewModel.onEvent(ViewsEvent.ToggleZeroBalance)
+        }
+    )
 }
 
 @Composable
-private fun Toolbar() {
+private fun Toolbar(onFilterClick: () -> Unit) {
     val nav = navigation()
     
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = UiConstants.PADDING_MEDIUM, vertical = UiConstants.PADDING_SMALL),
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
     ) {
         IvyIcon(
@@ -155,13 +183,22 @@ private fun Toolbar() {
             }
         )
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(UiConstants.PADDING_MEDIUM))
 
         Text(
             text = "Views",
             style = UI.typo.h2.style(
                 fontWeight = FontWeight.ExtraBold
             )
+        )
+        
+        Spacer(modifier = Modifier.weight(1f))
+        
+        IvyIcon(
+            icon = R.drawable.ic_filter_xs,
+            modifier = androidx.compose.ui.Modifier.clickable {
+                onFilterClick()
+            }
         )
     }
 }
@@ -203,111 +240,118 @@ private fun NetWorthSection(
 }
 
 @Composable
-private fun FilterTogglesSection(
+private fun BoxWithConstraintsScope.ViewsFilterModal(
+    visible: Boolean,
     includeExcluded: Boolean,
     includeArchived: Boolean,
     includeZeroBalance: Boolean,
+    dismiss: () -> Unit,
     onToggleExcluded: () -> Unit,
     onToggleArchived: () -> Unit,
     onToggleZeroBalance: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = UiConstants.PADDING_MEDIUM, vertical = UiConstants.PADDING_SMALL)
-            .background(
-                color = UI.colors.pureInverse.copy(alpha = UiConstants.ALPHA_LOW),
-                shape = RoundedCornerShape(UiConstants.CORNER_RADIUS_SMALL)
-            )
-            .padding(UiConstants.PADDING_LARGE)
+    var localIncludeExcluded by remember(includeExcluded) { mutableStateOf(includeExcluded) }
+    var localIncludeArchived by remember(includeArchived) { mutableStateOf(includeArchived) }
+    var localIncludeZeroBalance by remember(includeZeroBalance) { mutableStateOf(includeZeroBalance) }
+
+    IvyModal(
+        id = UUID.randomUUID(),
+        visible = visible,
+        dismiss = dismiss,
+        PrimaryAction = {
+            ModalSave(
+                modifier = Modifier.testTag("filter_save")
+            ) {
+                // Apply local changes if they're different
+                if (localIncludeExcluded != includeExcluded) onToggleExcluded()
+                if (localIncludeArchived != includeArchived) onToggleArchived()
+                if (localIncludeZeroBalance != includeZeroBalance) onToggleZeroBalance()
+                dismiss()
+            }
+        },
+        includeActionsRowPadding = false,
+        scrollState = null
     ) {
-        Text(
-            text = "Account Filters",
-            style = UI.typo.b2.style(
-                fontWeight = FontWeight.Medium,
-                color = UI.colors.pureInverse.copy(alpha = UiConstants.ALPHA_MEDIUM)
-            )
-        )
-        
-        Spacer(modifier = Modifier.height(UiConstants.SPACING_SMALL))
-        
+        Spacer(Modifier.height(32.dp))
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            ModalTitle(text = "Account Filters")
+
+            Spacer(Modifier.weight(1f))
+
+            Spacer(Modifier.width(32.dp))
+        }
+
+        Spacer(Modifier.height(24.dp))
+
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(UiConstants.SPACING_SMALL)
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(UiConstants.PADDING_MEDIUM)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(UiConstants.SPACING_MEDIUM),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Excluded Toggle
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onToggleExcluded() }
-                ) {
-                    Text(
-                        text = "Excluded",
-                        style = UI.typo.b2.style(
-                            color = if (includeExcluded) 
-                                UI.colors.pureInverse 
-                            else 
-                                UI.colors.pureInverse.copy(alpha = UiConstants.ALPHA_DISABLED)
-                        )
-                    )
-                    Spacer(modifier = Modifier.width(UiConstants.SPACING_SMALL))
-                    Switch(
-                        checked = includeExcluded,
-                        onCheckedChange = { onToggleExcluded() }
-                    )
-                }
-                
-                // Archived Toggle
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onToggleArchived() }
-                ) {
-                    Text(
-                        text = "Archived",
-                        style = UI.typo.b2.style(
-                            color = if (includeArchived) 
-                                UI.colors.pureInverse 
-                            else 
-                                UI.colors.pureInverse.copy(alpha = UiConstants.ALPHA_DISABLED)
-                        )
-                    )
-                    Spacer(modifier = Modifier.width(UiConstants.SPACING_SMALL))
-                    Switch(
-                        checked = includeArchived,
-                        onCheckedChange = { onToggleArchived() }
-                    )
-                }
-            }
-            
-            // Zero Balance Toggle
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickable { onToggleZeroBalance() }
-            ) {
-                Text(
-                    text = "Zero Balance",
-                    style = UI.typo.b2.style(
-                        color = if (includeZeroBalance) 
-                            UI.colors.pureInverse 
-                        else 
-                            UI.colors.pureInverse.copy(alpha = UiConstants.ALPHA_DISABLED)
-                    )
-                )
-                Spacer(modifier = Modifier.width(UiConstants.SPACING_SMALL))
-                Switch(
-                    checked = includeZeroBalance,
-                    onCheckedChange = { onToggleZeroBalance() }
-                )
-            }
+            FilterModalRow(
+                title = "Include Excluded Accounts",
+                subtitle = "Show accounts marked as excluded from balance",
+                isChecked = localIncludeExcluded,
+                onToggle = { localIncludeExcluded = it }
+            )
+
+            FilterModalRow(
+                title = "Include Archived Accounts", 
+                subtitle = "Show accounts that have been archived",
+                isChecked = localIncludeArchived,
+                onToggle = { localIncludeArchived = it }
+            )
+
+            FilterModalRow(
+                title = "Include Zero Balance Accounts",
+                subtitle = "Show accounts with zero balance",
+                isChecked = localIncludeZeroBalance,
+                onToggle = { localIncludeZeroBalance = it }
+            )
         }
+
+        Spacer(Modifier.height(120.dp)) // Space for action buttons
+    }
+}
+
+@Composable
+private fun FilterModalRow(
+    title: String,
+    subtitle: String,
+    isChecked: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = UiConstants.PADDING_MEDIUM),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = title,
+                style = UI.typo.b1.style(
+                    fontWeight = FontWeight.Medium,
+                    color = UI.colors.pureInverse
+                )
+            )
+            Spacer(modifier = Modifier.height(UiConstants.SPACING_TINY))
+            Text(
+                text = subtitle,
+                style = UI.typo.b2.style(
+                    color = UI.colors.pureInverse.copy(alpha = UiConstants.ALPHA_MEDIUM)
+                )
+            )
+        }
+
+        Switch(
+            checked = isChecked,
+            onCheckedChange = onToggle
+        )
     }
 }
 
