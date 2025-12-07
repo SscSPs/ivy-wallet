@@ -91,19 +91,16 @@ class AutoBackupWorker @AssistedInject constructor(
             }
 
             // 1. Generate Backup
-            val jsonBackup = backupDataUseCase.generateJsonBackup()
             val timestamp = now.format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-            val fileName = "ivy_backup_$timestamp.json"
+            val fileName = "ivy_backup_$timestamp.zip"
 
-            val newFile = backupFolder.createFile("application/json", fileName)
+            val newFile = backupFolder.createFile("application/zip", fileName)
             if (newFile == null) {
                 Timber.e("Failed to create backup file.")
                 return Result.failure()
             }
 
-            applicationContext.contentResolver.openOutputStream(newFile.uri)?.use { outputStream ->
-                outputStream.write(jsonBackup.toByteArray(Charsets.UTF_8))
-            } ?: return Result.failure()
+            backupDataUseCase.exportToFile(newFile.uri)
 
             Timber.d("Backup created successfully: $fileName")
 
@@ -116,9 +113,9 @@ class AutoBackupWorker @AssistedInject constructor(
 
             backupFolder.listFiles().forEach { file ->
                 val name = file.name
-                if (name != null && name.startsWith("ivy_backup_") && name.endsWith(".json")) {
+                if (name != null && name.startsWith("ivy_backup_") && name.endsWith(".zip")) {
                     try {
-                        val datePart = name.removePrefix("ivy_backup_").removeSuffix(".json")
+                        val datePart = name.removePrefix("ivy_backup_").removeSuffix(".zip")
                         val fileDate = LocalDateTime.parse(datePart, formatter)
 
                         if (fileDate.isBefore(thirtyDaysAgo)) {
