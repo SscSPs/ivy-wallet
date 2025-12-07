@@ -94,6 +94,21 @@ class IvyWalletCtx @Inject constructor() : IvyContext() {
     fun selectMainTab(tab: com.ivy.legacy.data.model.MainTab) {
         mainTab = tab
     }
+    
+    @Deprecated("Legacy code. Don't use it, please.")
+    fun getDefaultStartTab(sharedPrefs: SharedPrefs): com.ivy.legacy.data.model.MainTab {
+        return try {
+            val defaultTabName = sharedPrefs.getString(SharedPrefs.DEFAULT_START_TAB, "HOME")
+            com.ivy.legacy.data.model.MainTab.valueOf(defaultTabName?:"HOME")
+        } catch (e: Exception) {
+            com.ivy.legacy.data.model.MainTab.HOME
+        }
+    }
+    
+    @Deprecated("Legacy code. Don't use it, please.")
+    fun setDefaultStartTab(sharedPrefs: SharedPrefs, tab: com.ivy.legacy.data.model.MainTab) {
+        sharedPrefs.putString(SharedPrefs.DEFAULT_START_TAB, tab.name)
+    }
 
     @Deprecated("Legacy code. Don't use it, please.")
     var moreMenuExpanded = false

@@ -77,6 +77,7 @@ class SettingsViewModel @Inject constructor(
     private val autoBackupEnabled = mutableStateOf(false)
     private val autoBackupUri = mutableStateOf<String?>(null)
     private val backupFrequency = mutableStateOf<BackupFrequency>(BackupFrequency.Daily)
+    private val defaultTab = mutableStateOf("HOME")
 
     @Composable
     override fun uiState(): SettingsState {
@@ -98,7 +99,8 @@ class SettingsViewModel @Inject constructor(
             languageOptionVisible = isLanguageOptionVisible(),
             autoBackupEnabled = getAutoBackupEnabled(),
             autoBackupUri = getAutoBackupUri(),
-            backupFrequency = getBackupFrequency()
+            backupFrequency = getBackupFrequency(),
+            defaultTab = getDefaultTab()
         )
     }
 
@@ -113,12 +115,17 @@ class SettingsViewModel @Inject constructor(
         initializeTransfersAsIncomeExpense()
         initializeStartDateOfMonth()
         initializeAutoBackup()
+        initializeDefaultTab()
     }
 
     private suspend fun initializeAutoBackup() {
         autoBackupEnabled.value = backupRepository.isAutoBackupEnabled.first()
         autoBackupUri.value = backupRepository.autoBackupUri.first()
         backupFrequency.value = backupRepository.backupFrequency.first()
+    }
+
+    private fun initializeDefaultTab() {
+        defaultTab.value = ivyContext.getDefaultStartTab(sharedPrefs).name
     }
 
     private suspend fun initializeCurrency() {
@@ -239,6 +246,11 @@ class SettingsViewModel @Inject constructor(
         return backupFrequency.value
     }
 
+    @Composable
+    private fun getDefaultTab(): String {
+        return defaultTab.value
+    }
+
     override fun onEvent(event: SettingsEvent) {
         when (event) {
             is SettingsEvent.SetCurrency -> setCurrency(event.newCurrency)
@@ -269,6 +281,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.SetAutoBackupEnabled -> setAutoBackupEnabled(event.enabled)
             is SettingsEvent.SetAutoBackupUri -> setAutoBackupUri(event.uri)
             is SettingsEvent.SetBackupFrequency -> setBackupFrequency(event.frequency)
+            is SettingsEvent.SetDefaultTab -> setDefaultTab(event.tab)
         }
     }
 
@@ -506,6 +519,29 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             backupRepository.setBackupFrequency(frequency)
             backupFrequency.value = frequency
+        }
+    }
+    
+    private fun setDefaultTab(tab: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                // Save the default tab preference
+                sharedPrefs.putString(SharedPrefs.DEFAULT_START_TAB, tab)
+                
+                // Update the current tab if needed
+                val mainTab = try {
+                    com.ivy.legacy.data.model.MainTab.valueOf(tab)
+                } catch (e: Exception) {
+                    com.ivy.legacy.data.model.MainTab.HOME
+                }
+                ivyContext.setDefaultStartTab(sharedPrefs, mainTab)
+                
+                // Update the local state
+                defaultTab.value = tab
+            } catch (e: Exception) {
+                // Handle any exceptions
+                e.printStackTrace()
+            }
         }
     }
 }

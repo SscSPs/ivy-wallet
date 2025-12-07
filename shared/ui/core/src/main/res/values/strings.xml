@@ -255,6 +255,7 @@
     <string name="product">Product</string>
     <string name="danger_zone">Danger zone</string>
     <string name="delete_all_user_data">Delete all user data</string>
+    <string name="default_tab">Default Tab</string>
     <string name="delete_all_user_data_question">Delete all user data?</string>
     <string name="delete_all_user_data_warning">WARNING! This action will PERMANENTLY delete all data associated with %1$s. It cannot be recovered.</string>
     <string name="your_account">your account</string>

@@ -99,6 +99,10 @@ class RootViewModel @Inject constructor(
 
     private fun navigateOnboardedUser(intent: Intent) {
         if (!handleSpecialStart(intent)) {
+            // Set the default tab before navigating to MainScreen
+            val defaultTab = ivyContext.getDefaultStartTab(sharedPrefs)
+            ivyContext.selectMainTab(defaultTab)
+            
             nav.navigateTo(MainScreen)
             transactionReminderLogic.scheduleReminder()
         }

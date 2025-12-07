@@ -5,6 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,7 +38,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -46,11 +49,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.sp
 import com.ivy.base.legacy.Theme
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.design.l1_buildingBlocks.IconScale
+import com.ivy.design.l1_buildingBlocks.IvyIcon
 import com.ivy.design.l1_buildingBlocks.IvyIconScaled
 import com.ivy.design.utils.thenIf
 import com.ivy.legacy.Constants
@@ -161,6 +166,10 @@ fun BoxWithConstraintsScope.SettingsScreen() {
         },
         onSwitchLanguage = {
             viewModel.onEvent(SettingsEvent.SwitchLanguage)
+        },
+        defaultTab = uiState.defaultTab,
+        onSetDefaultTab = {
+            viewModel.onEvent(SettingsEvent.SetDefaultTab(it))
         }
     )
 }
@@ -200,7 +209,9 @@ private fun BoxWithConstraintsScope.UI(
     backupFrequency: BackupFrequency = BackupFrequency.Daily,
     onSetAutoBackupEnabled: (Boolean) -> Unit = {},
     onSetAutoBackupUri: (String) -> Unit = {},
-    onSetBackupFrequency: (BackupFrequency) -> Unit = {}
+    onSetBackupFrequency: (BackupFrequency) -> Unit = {},
+    defaultTab: String = "HOME",
+    onSetDefaultTab: (String) -> Unit = {}
 ) {
     var currencyModalVisible by remember { mutableStateOf(false) }
     var nameModalVisible by remember { mutableStateOf(false) }
@@ -514,6 +525,13 @@ private fun BoxWithConstraintsScope.UI(
 
             CustomFeatures(
                 onClick = { nav.navigateTo(FeaturesScreen) }
+            )
+
+            Spacer(Modifier.height(12.dp))
+
+            DefaultTabSetting(
+                currentTab = defaultTab,
+                onTabSelected = { onSetDefaultTab(it) }
             )
         }
 
@@ -1256,6 +1274,92 @@ private fun CurrencyButton(
         )
 
         Spacer(Modifier.width(24.dp))
+    }
+}
+
+@Composable
+private fun DefaultTabSetting(
+    currentTab: String,
+    onTabSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val tabs = listOf("HOME", "ACCOUNTS")
+    
+    Box {
+        SettingsDefaultButton(
+            icon = when (currentTab) {
+                "HOME" -> R.drawable.ic_home
+                "ACCOUNTS" -> R.drawable.ic_accounts
+                else -> R.drawable.ic_home
+            },
+            text = stringResource(R.string.default_tab),
+            description = when (currentTab) {
+                "HOME" -> stringResource(R.string.home)
+                "ACCOUNTS" -> stringResource(R.string.accounts)
+                else -> stringResource(R.string.home)
+            }
+        ) {
+            expanded = true
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier
+                .width(with(LocalDensity.current) { 
+                    // Get screen width and calculate 2/3rds
+                    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+                    (screenWidth * 0.67f - 32.dp) // Subtract padding
+                })
+                .background(
+                    color = UI.colors.pure,
+                    shape = UI.shapes.r4
+                )
+                .border(
+                    width = 1.dp,
+                    color = UI.colors.medium,
+                    shape = UI.shapes.r4
+                ),
+            offset = DpOffset((-16).dp, 0.dp)
+        ) {
+            tabs.forEach { tab ->
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IvyIcon(
+                                icon = when (tab) {
+                                    "HOME" -> R.drawable.ic_home
+                                    "ACCOUNTS" -> R.drawable.ic_accounts
+                                    else -> R.drawable.ic_home
+                                },
+                                tint = UI.colors.pureInverse
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                text = when (tab) {
+                                    "HOME" -> stringResource(R.string.home)
+                                    "ACCOUNTS" -> stringResource(R.string.accounts)
+                                    else -> tab
+                                },
+                                style = UI.typo.b2.style(
+                                    color = UI.colors.pureInverse,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    onClick = {
+                        onTabSelected(tab)
+                        expanded = false
+                    }
+                )
+            }
+        }
     }
 }
 

@@ -17,5 +17,6 @@ data class SettingsState(
     val languageOptionVisible: Boolean = false,
     val autoBackupEnabled: Boolean = false,
     val autoBackupUri: String? = null,
-    val backupFrequency: BackupFrequency = BackupFrequency.Daily
+    val backupFrequency: BackupFrequency = BackupFrequency.Daily,
+    val defaultTab: String = "HOME"
 )

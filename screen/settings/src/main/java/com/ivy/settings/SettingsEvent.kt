@@ -24,4 +24,5 @@ sealed interface SettingsEvent {
     data class SetAutoBackupEnabled(val enabled: Boolean) : SettingsEvent
     data class SetAutoBackupUri(val uri: String) : SettingsEvent
     data class SetBackupFrequency(val frequency: BackupFrequency) : SettingsEvent
+    data class SetDefaultTab(val tab: String) : SettingsEvent
 }
