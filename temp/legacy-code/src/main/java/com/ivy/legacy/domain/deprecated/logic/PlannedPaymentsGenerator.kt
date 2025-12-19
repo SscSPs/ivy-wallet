@@ -6,12 +6,18 @@ import com.ivy.data.repository.mapper.TransactionMapper
 import com.ivy.legacy.datamodel.PlannedPaymentRule
 import com.ivy.legacy.datamodel.temp.toDomain
 import com.ivy.legacy.incrementDate
+import com.ivy.data.db.dao.read.AccountDao
+import com.ivy.data.db.dao.read.SettingsDao
+import com.ivy.wallet.domain.deprecated.logic.currency.ExchangeRatesLogic
 import java.time.Instant
 import javax.inject.Inject
 
 class PlannedPaymentsGenerator @Inject constructor(
     private val transactionMapper: TransactionMapper,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val accountDao: AccountDao,
+    private val settingsDao: SettingsDao,
+    private val exchangeRatesLogic: ExchangeRatesLogic,
 ) {
     companion object {
         private const val GENERATED_INSTANCES_LIMIT = 72
@@ -75,6 +81,28 @@ class PlannedPaymentsGenerator @Inject constructor(
     }
 
     private suspend fun generateTransaction(rule: PlannedPaymentRule, dueDate: Instant) {
+        val toAmount = if (rule.toAccountId != null && rule.toAmount == null) {
+            val fromAccount = accountDao.findById(rule.accountId)
+            val toAccount = accountDao.findById(rule.toAccountId)
+            val baseCurrency = settingsDao.findFirst().currency
+
+            val fromCurrency = fromAccount?.currency
+            val toCurrency = toAccount?.currency
+
+            if (fromCurrency != null && toCurrency != null) {
+                exchangeRatesLogic.convertAmount(
+                    baseCurrency = baseCurrency,
+                    amount = rule.amount,
+                    fromCurrency = fromCurrency,
+                    toCurrency = toCurrency
+                )
+            } else {
+                rule.amount
+            }
+        } else {
+            rule.toAmount ?: rule.amount
+        }
+
         Transaction(
             type = rule.type,
             accountId = rule.accountId,
@@ -87,7 +115,7 @@ class PlannedPaymentsGenerator @Inject constructor(
             dateTime = null,
             toAccountId = rule.toAccountId,
             isSynced = false,
-            toAmount = rule.toAmount?.toBigDecimal() ?: rule.amount.toBigDecimal()
+            toAmount = toAmount.toBigDecimal()
         ).toDomain(transactionMapper)?.let {
             transactionRepository.save(it)
         }
