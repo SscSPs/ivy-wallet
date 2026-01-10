@@ -12,6 +12,11 @@ sealed interface TransactionsEvent {
     data class SetUpcomingExpanded(val expanded: Boolean) : TransactionsEvent
     data class SetOverdueExpanded(val expanded: Boolean) : TransactionsEvent
 
+    data class SaveTransaction(
+        val screen: TransactionsScreen,
+        val transaction: Transaction,
+    ) : TransactionsEvent
+
     data class SetPeriod(
         val screen: TransactionsScreen,
         val period: TimePeriod
@@ -21,6 +26,11 @@ sealed interface TransactionsEvent {
     data class PreviousMonth(val screen: TransactionsScreen) : TransactionsEvent
     data class Delete(val screen: TransactionsScreen) : TransactionsEvent
     data class EditCategory(val updatedCategory: Category) : TransactionsEvent
+    data class CreateAccount(
+        val screen: TransactionsScreen,
+        val data: com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
+    ) : TransactionsEvent
+
     data class EditAccount(
         val screen: TransactionsScreen,
         val account: Account,

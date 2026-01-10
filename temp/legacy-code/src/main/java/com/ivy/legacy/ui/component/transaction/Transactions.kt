@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.ivy.base.legacy.Transaction
 import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.legacy.stringRes
+import com.ivy.data.model.Category
 import com.ivy.design.l0_system.UI
 import com.ivy.design.l0_system.style
 import com.ivy.legacy.data.AppBaseData
@@ -36,6 +37,7 @@ import com.ivy.wallet.ui.theme.Red
 import com.ivy.wallet.ui.theme.White
 import com.ivy.wallet.ui.theme.components.IvyButton
 import com.ivy.wallet.ui.theme.components.IvyIcon
+import java.util.UUID
 
 @Deprecated("Old design system. Use `:ivy-design` and Material3")
 fun LazyListScope.transactions(
@@ -55,7 +57,15 @@ fun LazyListScope.transactions(
     setUpcomingExpanded: (Boolean) -> Unit,
     setOverdueExpanded: (Boolean) -> Unit,
     onSkipTransaction: (Transaction) -> Unit = {},
-    onSkipAllTransactions: (List<Transaction>) -> Unit = {}
+    onSkipAllTransactions: (List<Transaction>) -> Unit = {},
+    editable: Boolean = false,
+    enableLongPressToEdit: Boolean = false,
+    editableTransactionId: UUID? = null,
+    onTransactionUpdated: (Transaction) -> Unit = {},
+    showCategoryModal: (Category?) -> Unit = {},
+    onTransactionLongPress: (Transaction) -> Unit = {},
+    onChooseCategory: (Transaction) -> Unit = {},
+    onChooseAccount: (Transaction, Boolean) -> Unit = { _, _ -> },
 ) {
     upcomingSection(
         baseData = baseData,
@@ -63,7 +73,15 @@ fun LazyListScope.transactions(
         shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
         onPayOrGet = onPayOrGet,
         onSkipTransaction = onSkipTransaction,
-        setExpanded = setUpcomingExpanded
+        setExpanded = setUpcomingExpanded,
+        editable = editable,
+        enableLongPressToEdit = enableLongPressToEdit,
+        editableTransactionId = editableTransactionId,
+        onTransactionUpdated = onTransactionUpdated,
+        showCategoryModal = showCategoryModal,
+        onTransactionLongPress = onTransactionLongPress,
+        onChooseCategory = onChooseCategory,
+        onChooseAccount = onChooseAccount,
     )
 
     overdueSection(
@@ -74,7 +92,15 @@ fun LazyListScope.transactions(
         onSkipTransaction = onSkipTransaction,
         onSkipAllTransactions = onSkipAllTransactions,
         shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
-        setExpanded = setOverdueExpanded
+        setExpanded = setOverdueExpanded,
+        editable = editable,
+        enableLongPressToEdit = enableLongPressToEdit,
+        editableTransactionId = editableTransactionId,
+        onTransactionUpdated = onTransactionUpdated,
+        showCategoryModal = showCategoryModal,
+        onTransactionLongPress = onTransactionLongPress,
+        onChooseCategory = onChooseCategory,
+        onChooseAccount = onChooseAccount,
     )
 
     historySection(
@@ -83,7 +109,15 @@ fun LazyListScope.transactions(
         history = history,
         shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
         dateDividerMarginTop = dateDividerMarginTop,
-        onPayOrGet = onPayOrGet
+        onPayOrGet = onPayOrGet,
+        editable = editable,
+        enableLongPressToEdit = enableLongPressToEdit,
+        editableTransactionId = editableTransactionId,
+        onTransactionUpdated = onTransactionUpdated,
+        showCategoryModal = showCategoryModal,
+        onTransactionLongPress = onTransactionLongPress,
+        onChooseCategory = onChooseCategory,
+        onChooseAccount = onChooseAccount,
     )
 
     if (
@@ -114,7 +148,15 @@ private fun LazyListScope.upcomingSection(
     shouldShowAccountSpecificColorInTransactions: Boolean,
     onPayOrGet: (Transaction) -> Unit,
     onSkipTransaction: (Transaction) -> Unit,
-    setExpanded: (Boolean) -> Unit
+    setExpanded: (Boolean) -> Unit,
+    editable: Boolean,
+    enableLongPressToEdit: Boolean,
+    editableTransactionId: UUID?,
+    onTransactionUpdated: (Transaction) -> Unit,
+    showCategoryModal: (Category?) -> Unit,
+    onTransactionLongPress: (Transaction) -> Unit,
+    onChooseCategory: (Transaction) -> Unit,
+    onChooseAccount: (Transaction, Boolean) -> Unit,
 ) {
     if (upcoming == null) return // guard
 
@@ -140,7 +182,15 @@ private fun LazyListScope.upcomingSection(
                 transactions = upcoming.trns,
                 shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
                 onPayOrGet = onPayOrGet,
-                onSkipTransaction = onSkipTransaction
+                onSkipTransaction = onSkipTransaction,
+                editable = editable,
+                enableLongPressToEdit = enableLongPressToEdit,
+                editableTransactionId = editableTransactionId,
+                onTransactionUpdated = onTransactionUpdated,
+                showCategoryModal = showCategoryModal,
+                onTransactionLongPress = onTransactionLongPress,
+                onChooseCategory = onChooseCategory,
+                onChooseAccount = onChooseAccount,
             )
         }
     }
@@ -154,7 +204,15 @@ private fun LazyListScope.overdueSection(
     onPayOrGet: (Transaction) -> Unit,
     onSkipTransaction: (Transaction) -> Unit,
     onSkipAllTransactions: (List<Transaction>) -> Unit,
-    setExpanded: (Boolean) -> Unit
+    setExpanded: (Boolean) -> Unit,
+    editable: Boolean,
+    enableLongPressToEdit: Boolean,
+    editableTransactionId: UUID?,
+    onTransactionUpdated: (Transaction) -> Unit,
+    showCategoryModal: (Category?) -> Unit,
+    onTransactionLongPress: (Transaction) -> Unit,
+    onChooseCategory: (Transaction) -> Unit,
+    onChooseAccount: (Transaction, Boolean) -> Unit,
 ) {
     if (overdue == null) return
 
@@ -203,7 +261,15 @@ private fun LazyListScope.overdueSection(
                 transactions = overdue.trns,
                 shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
                 onPayOrGet = onPayOrGet,
-                onSkipTransaction = onSkipTransaction
+                onSkipTransaction = onSkipTransaction,
+                editable = editable,
+                enableLongPressToEdit = enableLongPressToEdit,
+                editableTransactionId = editableTransactionId,
+                onTransactionUpdated = onTransactionUpdated,
+                showCategoryModal = showCategoryModal,
+                onTransactionLongPress = onTransactionLongPress,
+                onChooseCategory = onChooseCategory,
+                onChooseAccount = onChooseAccount,
             )
         }
     }
@@ -216,19 +282,42 @@ private fun LazyListScope.trnItems(
     shouldShowAccountSpecificColorInTransactions: Boolean,
     onPayOrGet: (Transaction) -> Unit,
     onSkipTransaction: (Transaction) -> Unit,
+    editable: Boolean,
+    enableLongPressToEdit: Boolean,
+    editableTransactionId: UUID?,
+    onTransactionUpdated: (Transaction) -> Unit,
+    showCategoryModal: (Category?) -> Unit,
+    onTransactionLongPress: (Transaction) -> Unit,
+    onChooseCategory: (Transaction) -> Unit,
+    onChooseAccount: (Transaction, Boolean) -> Unit,
 ) {
     items(
         items = transactions,
         key = { it.id }
     ) {
         val nav = navigation()
+        val cardEditable = if (enableLongPressToEdit) {
+            editableTransactionId == it.id
+        } else {
+            editable
+        }
         TransactionCard(
             baseData = baseData,
 
             transaction = it,
             shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
             onPayOrGet = onPayOrGet,
-            onSkipTransaction = onSkipTransaction
+            onSkipTransaction = onSkipTransaction,
+            editable = cardEditable,
+            onTransactionUpdated = onTransactionUpdated,
+            showCategoryModal = showCategoryModal,
+            onLongClick = if (enableLongPressToEdit) {
+                onTransactionLongPress
+            } else {
+                {}
+            },
+            onChooseCategory = { onChooseCategory(it) },
+            onChooseAccount = { isToAccount -> onChooseAccount(it, isToAccount) },
         ) { trn ->
             onTransactionClick(
                 nav = nav,
@@ -245,7 +334,15 @@ private fun LazyListScope.historySection(
     shouldShowAccountSpecificColorInTransactions: Boolean,
     dateDividerMarginTop: Dp? = null,
 
-    onPayOrGet: (Transaction) -> Unit
+    onPayOrGet: (Transaction) -> Unit,
+    editable: Boolean,
+    enableLongPressToEdit: Boolean,
+    editableTransactionId: UUID?,
+    onTransactionUpdated: (Transaction) -> Unit,
+    showCategoryModal: (Category?) -> Unit,
+    onTransactionLongPress: (Transaction) -> Unit,
+    onChooseCategory: (Transaction) -> Unit,
+    onChooseAccount: (Transaction, Boolean) -> Unit,
 ) {
     if (history.isNotEmpty()) {
         items(
@@ -261,13 +358,28 @@ private fun LazyListScope.historySection(
             when (it) {
                 is Transaction -> {
                     val nav = navigation()
+                    val cardEditable = if (enableLongPressToEdit) {
+                        editableTransactionId == it.id
+                    } else {
+                        editable
+                    }
 
                     TransactionCard(
                         baseData = baseData,
 
                         transaction = it,
                         shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
-                        onPayOrGet = onPayOrGet
+                        onPayOrGet = onPayOrGet,
+                        editable = cardEditable,
+                        onTransactionUpdated = onTransactionUpdated,
+                        showCategoryModal = showCategoryModal,
+                        onLongClick = if (enableLongPressToEdit) {
+                            onTransactionLongPress
+                        } else {
+                            {}
+                        },
+                        onChooseCategory = { onChooseCategory(it) },
+                        onChooseAccount = { isToAccount -> onChooseAccount(it, isToAccount) },
                     ) { trn ->
                         onTransactionClick(
                             nav = nav,

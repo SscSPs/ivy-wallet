@@ -61,6 +61,11 @@ import com.ivy.wallet.ui.theme.modal.ChoosePeriodModal
 import com.ivy.wallet.ui.theme.modal.ChoosePeriodModalData
 import com.ivy.wallet.ui.theme.modal.CurrencyModal
 import com.ivy.wallet.ui.theme.modal.DeleteModal
+import com.ivy.wallet.ui.theme.modal.edit.AccountModalData
+import com.ivy.wallet.ui.theme.modal.edit.ChooseAccountModal
+import com.ivy.wallet.ui.theme.modal.edit.ChooseCategoryModal
+import com.ivy.wallet.ui.theme.modal.edit.AccountModal
+import com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import java.math.BigDecimal
@@ -93,6 +98,13 @@ fun BoxWithConstraintsScope.HomeUi(
     }
     var moreMenuExpanded by remember { mutableStateOf(ivyContext.moreMenuExpanded) }
     var skipAllModalVisible by remember { mutableStateOf(false) }
+    var editingTransactionId: java.util.UUID? by remember { mutableStateOf(null) }
+    var transactionToChangeCategory: Transaction? by remember { mutableStateOf(null) }
+    var transactionToChangeAccount: Transaction? by remember { mutableStateOf(null) }
+    var isChangingToAccount: Boolean by remember { mutableStateOf(false) }
+    var accountModalData by remember { mutableStateOf<AccountModalData?>(null) }
+
+
     val setMoreMenuExpanded = { expanded: Boolean ->
         moreMenuExpanded = expanded
         ivyContext.setMoreMenuExpanded(expanded)
@@ -208,6 +220,27 @@ fun BoxWithConstraintsScope.HomeUi(
             } then2 onEvent,
             onSkipAllTransactions = {
                 skipAllModalVisible = true
+            },
+            editingTransactionId = editingTransactionId,
+            onTransactionLongPress = { trn ->
+                editingTransactionId = if (editingTransactionId == trn.id) {
+                    null
+                } else {
+                    trn.id
+                }
+            },
+            onTransactionUpdated = { trn ->
+                onEvent(HomeEvent.UpdateTransaction(trn))
+                if (editingTransactionId == trn.id) {
+                    editingTransactionId = null
+                }
+            },
+            onChooseCategory = { trn ->
+                transactionToChangeCategory = trn
+            },
+            onChooseAccount = { trn, isToAccount ->
+                transactionToChangeAccount = trn
+                isChangingToAccount = isToAccount
             }
         )
     }
@@ -277,6 +310,92 @@ fun BoxWithConstraintsScope.HomeUi(
         onEvent(HomeEvent.SkipAllPlanned(uiState.overdue.trns))
         skipAllModalVisible = false
     }
+
+    val chooseCategoryModalId = remember { java.util.UUID.randomUUID() }
+    ChooseCategoryModal(
+        id = chooseCategoryModalId,
+        visible = transactionToChangeCategory != null,
+        initialCategory = transactionToChangeCategory?.categoryId?.let { id ->
+            uiState.baseData.categories.find { it.id.value == id }
+        },
+        categories = uiState.baseData.categories,
+        showCategoryModal = { categoryToEditOrCreate ->
+            // TODO: Implement create/edit category modal if needed, or leave empty if only selection is allowed
+            // For now, we reuse the existing flow which might need CategoryModal.
+            // Since adding CategoryModal might be complex (requires more deps), we can defer it or implement basic selection.
+            // Actually, showCategoryModal implies we can create/edit. The existing logic in TransactionsScreen was:
+            /*
+             categoryModalData = CategoryModalData(
+                 category = categoryToEditOrCreate,
+                 autoFocusKeyboard = false
+             )
+             */
+            // We need `categoryModalData` state and `CategoryModal`.
+        },
+        onCategoryChanged = { newCategory ->
+            transactionToChangeCategory?.let { trn ->
+                val updatedTransaction = trn.copy(
+                    categoryId = newCategory?.id?.value
+                )
+                onEvent(HomeEvent.UpdateTransaction(updatedTransaction))
+            }
+            transactionToChangeCategory = null
+        },
+        dismiss = {
+            transactionToChangeCategory = null
+        }
+    )
+
+    val chooseAccountModalId = remember { java.util.UUID.randomUUID() }
+    ChooseAccountModal(
+        id = chooseAccountModalId,
+        visible = transactionToChangeAccount != null,
+        initialAccount = transactionToChangeAccount?.let { trn ->
+            val accountId = if (isChangingToAccount) trn.toAccountId else trn.accountId
+            uiState.baseData.accounts.find { it.id == accountId }
+        },
+        accounts = uiState.baseData.accounts,
+        showAccountModal = { accountToEditOrCreate ->
+            // accountToEditOrCreate is null when creating new account.
+            accountModalData = AccountModalData(
+                account = accountToEditOrCreate,
+                baseCurrency = baseCurrency,
+                balance = 0.0,
+                autoFocusKeyboard = true
+            )
+        },
+        onAccountChanged = { newAccount ->
+            transactionToChangeAccount?.let { trn ->
+                val updatedTransaction = if (isChangingToAccount) {
+                    trn.copy(toAccountId = newAccount?.id)
+                } else if (newAccount != null) {
+                    trn.copy(accountId = newAccount.id)
+                } else {
+                    null
+                }
+                if (updatedTransaction != null) {
+                    onEvent(HomeEvent.UpdateTransaction(updatedTransaction))
+                }
+            }
+            transactionToChangeAccount = null
+        },
+        dismiss = {
+            transactionToChangeAccount = null
+        }
+    )
+
+    AccountModal(
+        modal = accountModalData,
+        onCreateAccount = { data ->
+            onEvent(HomeEvent.CreateAccount(data))
+        },
+        onEditAccount = { acc, newBalance ->
+            onEvent(HomeEvent.EditAccount(acc, newBalance))
+        },
+        dismiss = {
+            accountModalData = null
+        }
+    )
 }
 
 @Suppress("LongParameterList")
@@ -312,7 +431,12 @@ fun HomeLazyColumn(
     onHiddenIncomeClick: () -> Unit,
     onSkipTransaction: (Transaction) -> Unit,
     onSkipAllTransactions: (List<Transaction>) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    editingTransactionId: java.util.UUID?,
+    onTransactionLongPress: (Transaction) -> Unit,
+    onTransactionUpdated: (Transaction) -> Unit,
+    onChooseCategory: (Transaction) -> Unit,
+    onChooseAccount: (Transaction, Boolean) -> Unit
 ) {
     val ivyContext = ivyWalletCtx()
 
@@ -390,7 +514,14 @@ fun HomeLazyColumn(
             ),
             shouldShowAccountSpecificColorInTransactions = shouldShowAccountSpecificColorInTransactions,
             onSkipTransaction = onSkipTransaction,
-            onSkipAllTransactions = onSkipAllTransactions
+            onSkipAllTransactions = onSkipAllTransactions,
+            editable = true,
+            enableLongPressToEdit = true,
+            editableTransactionId = editingTransactionId,
+            onTransactionLongPress = onTransactionLongPress,
+            onTransactionUpdated = onTransactionUpdated,
+            onChooseCategory = onChooseCategory,
+            onChooseAccount = onChooseAccount
         )
     }
 }

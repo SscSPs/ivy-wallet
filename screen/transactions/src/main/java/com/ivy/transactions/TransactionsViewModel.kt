@@ -15,6 +15,7 @@ import com.ivy.base.model.TransactionType
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
 import com.ivy.data.db.dao.read.AccountDao
+import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.db.dao.write.WritePlannedPaymentRuleDao
 import com.ivy.data.model.AccountId
 import com.ivy.data.model.Category
@@ -68,12 +69,14 @@ import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
 import com.ivy.legacy.datamodel.Account as LegacyAccount
+import com.ivy.legacy.datamodel.toEntity
 
 @Stable
 @HiltViewModel
 class TransactionsViewModel @Inject constructor(
     private val accountRepository: AccountRepository,
     private val accountDao: AccountDao,
+    private val writeTransactionDao: WriteTransactionDao,
     private val categoryRepository: CategoryRepository,
     private val ivyContext: IvyWalletCtx,
     private val nav: Navigation,
@@ -306,16 +309,23 @@ class TransactionsViewModel @Inject constructor(
 
     override fun onEvent(event: TransactionsEvent) {
         when (event) {
+            is TransactionsEvent.CreateAccount -> createAccount(event.screen, event.data)
             is TransactionsEvent.Delete -> delete(event.screen)
             is TransactionsEvent.EditAccount -> editAccount(
                 event.screen,
                 event.account,
                 event.newBalance
             )
+
             is TransactionsEvent.SetAccountReconcile -> reconAccount(
                 event.screen,
                 event.account,
                 event.reconDate
+            )
+
+            is TransactionsEvent.SaveTransaction -> saveTransaction(
+                screen = event.screen,
+                transaction = event.transaction,
             )
 
             is TransactionsEvent.EditCategory -> editCategory(event.updatedCategory)
@@ -338,6 +348,37 @@ class TransactionsViewModel @Inject constructor(
             is TransactionsEvent.SetSkipAllModalVisible -> setSkipAllModalVisible(event.visible)
             is TransactionsEvent.OnDeleteModal1Visible -> setDeleteModal1Visible(event.delete)
             is TransactionsEvent.OnChoosePeriodModalData -> setChoosePeriodModalData(event.data)
+        }
+    }
+
+    private fun saveTransaction(
+        screen: TransactionsScreen,
+        transaction: Transaction,
+    ) {
+        viewModelScope.launch {
+            ioThread {
+                writeTransactionDao.save(
+                    transaction
+                        .copy(isSynced = false, isDeleted = false)
+                        .toEntity()
+                )
+            }
+
+            start(
+                screen = screen,
+                reset = false,
+            )
+        }
+    }
+
+    private fun createAccount(
+        screen: TransactionsScreen,
+        data: com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData
+    ) {
+        viewModelScope.launch {
+            accountCreator.createAccount(data) {
+                start(screen = screen, reset = false)
+            }
         }
     }
 
@@ -783,7 +824,6 @@ class TransactionsViewModel @Inject constructor(
             accountCreator.editAccount(account, newBalance) {
                 start(
                     screen = screen,
-                    timePeriod = period.value,
                     reset = false
                 )
             }

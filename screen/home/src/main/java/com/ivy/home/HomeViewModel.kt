@@ -12,6 +12,7 @@ import com.ivy.base.legacy.Transaction
 import com.ivy.base.legacy.TransactionHistoryItem
 import com.ivy.base.time.TimeConverter
 import com.ivy.base.time.TimeProvider
+import com.ivy.data.db.dao.write.WriteTransactionDao
 import com.ivy.data.model.primitive.AssetCode
 import com.ivy.data.repository.CategoryRepository
 import com.ivy.data.repository.mapper.TransactionMapper
@@ -32,6 +33,7 @@ import com.ivy.legacy.data.model.toUTCCloseTimeRange
 import com.ivy.legacy.datamodel.Account
 import com.ivy.legacy.datamodel.Settings
 import com.ivy.legacy.datamodel.temp.toLegacyDomain
+import com.ivy.legacy.datamodel.toEntity
 import com.ivy.legacy.domain.action.settings.UpdateSettingsAct
 import com.ivy.legacy.domain.action.viewmodel.home.ShouldHideIncomeAct
 import com.ivy.legacy.utils.dateNowUTC
@@ -78,6 +80,8 @@ class HomeViewModel @Inject constructor(
     private val settingsAct: SettingsAct,
     private val accountsAct: AccountsAct,
     private val categoryRepository: CategoryRepository,
+    private val accountCreator: com.ivy.legacy.domain.deprecated.logic.AccountCreator,
+    private val writeTransactionDao: WriteTransactionDao,
     private val calcBufferDiffAct: CalcBufferDiffAct,
     private val upcomingAct: UpcomingAct,
     private val overdueAct: OverdueAct,
@@ -249,10 +253,38 @@ class HomeViewModel @Inject constructor(
                 is HomeEvent.SetOverdueExpanded -> setOverdueExpanded(event.expanded)
                 is HomeEvent.SetBuffer -> setBuffer(event.buffer)
                 is HomeEvent.SetCurrency -> setCurrency(event.currency).fixUnit()
+                is HomeEvent.UpdateTransaction -> updateTransaction(event.transaction)
                 HomeEvent.SwitchTheme -> switchTheme()
                 is HomeEvent.DismissCustomerJourneyCard -> dismissCustomerJourneyCard(event.card)
                 is HomeEvent.SetExpanded -> setExpanded(event.expanded)
+                is HomeEvent.CreateAccount -> createAccount(event.data)
+                is HomeEvent.EditAccount -> editAccount(event.account, event.newBalance)
             }
+        }
+    }
+
+    private fun createAccount(data: com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData) {
+        viewModelScope.launch {
+            accountCreator.createAccount(data) {
+                reload()
+            }
+        }
+    }
+
+    private fun editAccount(account: Account, newBalance: Double) {
+        viewModelScope.launch {
+            accountCreator.editAccount(account, newBalance) {
+                reload()
+            }
+        }
+    }
+
+    private fun updateTransaction(transaction: Transaction) {
+        viewModelScope.launch {
+            ioThread {
+                writeTransactionDao.save(transaction.toEntity())
+            }
+            reload()
         }
     }
 

@@ -24,6 +24,9 @@ sealed interface HomeEvent {
     data class PayOrGetPlanned(val transaction: Transaction) : HomeEvent
     data class SkipPlanned(val transaction: Transaction) : HomeEvent
     data class SkipAllPlanned(val transactions: List<Transaction>) : HomeEvent
+    data class UpdateTransaction(val transaction: Transaction) : HomeEvent
+    data class CreateAccount(val data: com.ivy.wallet.domain.deprecated.logic.model.CreateAccountData) : HomeEvent
+    data class EditAccount(val account: com.ivy.legacy.datamodel.Account, val newBalance: Double) : HomeEvent
 
     data class DismissCustomerJourneyCard(val card: CustomerJourneyCardModel) : HomeEvent
 
